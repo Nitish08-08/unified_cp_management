@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Unified CP – Welcome</title>
+    <style>
+        :root {
+            color-scheme: light dark;
+            --bg: #0f172a;
+            --surface: #111a2f;
+            --text: #e2e8f0;
+            --muted: #94a3b8;
+            --accent: #60a5fa;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 20px;
+        }
+
+        .card {
+            max-width: 640px;
+            background: var(--surface);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 25px 45px rgba(15, 23, 42, 0.45);
+            text-align: center;
+        }
+
+        h1 {
+            margin: 0 0 14px;
+            font-size: 2.4rem;
+        }
+
+        p {
+            margin: 0 0 24px;
+            color: var(--muted);
+            line-height: 1.6;
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        a.button {
+            padding: 12px 22px;
+            border-radius: 999px;
+            font-weight: 600;
+            text-decoration: none;
+            color: #0b1220;
+            background: var(--accent);
+            box-shadow: 0 15px 34px rgba(96, 165, 250, 0.35);
+            transition: transform 0.25s ease, box-shadow 0.3s ease;
+        }
+
+        a.button.secondary {
+            background: rgba(96, 165, 250, 0.15);
+            color: var(--accent);
+            box-shadow: none;
+        }
+
+        a.button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 36px rgba(96, 165, 250, 0.45);
+        }
+
+        footer {
+            padding: 18px 0;
+            text-align: center;
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <div class="card">
+            <span style="display:inline-block; padding:6px 14px; border-radius:999px; background:rgba(96, 165, 250, 0.18); color:var(--accent); font-size:0.8rem; letter-spacing:0.08em; text-transform:uppercase;">Unified Competitive Programming</span>
+            <h1>Welcome to Unified CP</h1>
+            <p>
+                Track your Codeforces, LeetCode, and CodeChef journeys in one pane of glass. Sync contests, solved problems, topic analytics, and your composite performance score with a single click.
+            </p>
+            <div class="actions">
+                <a class="button" href="index.php">Launch App</a>
+                <a class="button secondary" href="register.php">Create Account</a>
+                <a class="button secondary" href="login.php">Sign In</a>
+            </div>
+        </div>
+    </main>
+    <footer>
+        <a href="index.php" style="color:inherit; text-decoration:none;">← Back to Home</a>
+    </footer>
+</body>
+</html>

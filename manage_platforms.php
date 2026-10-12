@@ -12,87 +12,96 @@ $messageType = 'success';
 if ($pdo !== null) {
     /* Auto Sync Codeforces */
     if (isset($_POST['fetch_cf'])) {
-        $profileUrl = trim($_POST['profile_url'] ?? '');
+        $input = trim($_POST['profile_url'] ?? '');
+        $handle = '';
 
-        if (!preg_match("/codeforces\.com\/profile\/([^\/]+)/", $profileUrl, $match)) {
-            $message = "Invalid Codeforces profile URL. Format should be: https://codeforces.com/profile/handle";
+        if (preg_match("/codeforces\.com\/profile\/([^\/\s]+)/i", $input, $match)) {
+            $handle = $match[1];
+        } elseif (preg_match('/^[a-zA-Z0-9_.-]+$/', $input)) {
+            $handle = $input;
+        }
+
+        if (!$handle) {
+            $message = "Please enter a valid Codeforces handle or profile URL.";
             $messageType = 'error';
         } else {
-            $handle = $match[1];
+            $pdo->exec("INSERT IGNORE INTO platforms (platform_name, base_url) VALUES ('Codeforces', 'https://codeforces.com')");
+            $platform_id = $pdo->query("SELECT id FROM platforms WHERE platform_name='Codeforces'")->fetch()['id'];
 
-            $pdo->exec("INSERT IGNORE INTO platforms (platform_name, base_url)
-                        VALUES ('Codeforces', 'https://codeforces.com')");
-            $platform_id = $pdo->query("SELECT id FROM platforms WHERE platform_name='Codeforces'")
-                               ->fetch()['id'];
-
-            $pdo->prepare("INSERT IGNORE INTO user_platform_profiles
-                (user_id, platform_id, handle, last_sync_date)
-                VALUES (?, ?, ?, NOW())")->execute([$user_id, $platform_id, $handle]);
+            $pdo->prepare("INSERT INTO user_platform_profiles (user_id, platform_id, handle, last_sync_date)
+                           VALUES (?, ?, ?, NOW())
+                           ON DUPLICATE KEY UPDATE handle=VALUES(handle), last_sync_date=NOW()")->execute([$user_id, $platform_id, $handle]);
 
             $stmt = $pdo->prepare("SELECT id FROM user_platform_profiles WHERE user_id=? AND platform_id=?");
             $stmt->execute([$user_id, $platform_id]);
             $profile_id = $stmt->fetch()['id'];
 
             include 'sync_cf.php';
-            $message = "Codeforces profile ($handle) synchronized successfully!";
+            $message = "Codeforces account (@$handle) synchronized successfully!";
             $messageType = 'success';
         }
     }
 
     /* Auto Sync LeetCode */
     if (isset($_POST['fetch_lc'])) {
-        $lcUrl = trim($_POST['lc_url'] ?? '');
+        $input = trim($_POST['lc_url'] ?? '');
+        $handle = '';
 
-        if (!preg_match("/leetcode\.com\/(?:u\/)?([^\/]+)/", $lcUrl, $m)) {
-            $message = "Invalid LeetCode profile URL. Format should be: https://leetcode.com/u/handle/";
+        if (preg_match("/leetcode\.com\/(?:u\/)?([^\/\s]+)/i", $input, $m)) {
+            $handle = $m[1];
+        } elseif (preg_match('/^[a-zA-Z0-9_.-]+$/', $input)) {
+            $handle = $input;
+        }
+
+        if (!$handle) {
+            $message = "Please enter a valid LeetCode username or profile URL.";
             $messageType = 'error';
         } else {
-            $handle = $m[1];
+            $pdo->exec("INSERT IGNORE INTO platforms (platform_name, base_url) VALUES ('LeetCode', 'https://leetcode.com')");
+            $platform_id = $pdo->query("SELECT id FROM platforms WHERE platform_name='LeetCode'")->fetch()['id'];
 
-            $pdo->exec("INSERT IGNORE INTO platforms (platform_name, base_url)
-                        VALUES ('LeetCode', 'https://leetcode.com')");
-            $platform_id = $pdo->query("SELECT id FROM platforms WHERE platform_name='LeetCode'")
-                               ->fetch()['id'];
-
-            $pdo->prepare("INSERT IGNORE INTO user_platform_profiles
-                (user_id, platform_id, handle, last_sync_date)
-                VALUES (?, ?, ?, NOW())")->execute([$user_id, $platform_id, $handle]);
+            $pdo->prepare("INSERT INTO user_platform_profiles (user_id, platform_id, handle, last_sync_date)
+                           VALUES (?, ?, ?, NOW())
+                           ON DUPLICATE KEY UPDATE handle=VALUES(handle), last_sync_date=NOW()")->execute([$user_id, $platform_id, $handle]);
 
             $stmt = $pdo->prepare("SELECT id FROM user_platform_profiles WHERE user_id=? AND platform_id=?");
             $stmt->execute([$user_id, $platform_id]);
             $profile_id = $stmt->fetch()['id'];
 
             include 'sync_lc.php';
-            $message = "LeetCode profile ($handle) synchronized successfully!";
+            $message = "LeetCode account (@$handle) synchronized successfully!";
             $messageType = 'success';
         }
     }
 
     /* Auto Sync CodeChef */
     if (isset($_POST['fetch_cc'])) {
-        $ccUrl = trim($_POST['cc_url'] ?? '');
+        $input = trim($_POST['cc_url'] ?? '');
+        $handle = '';
 
-        if (!preg_match("/codechef\.com\/users\/([^\/]+)/", $ccUrl, $m)) {
-            $message = "Invalid CodeChef profile URL. Format should be: https://www.codechef.com/users/handle";
+        if (preg_match("/codechef\.com\/users\/([^\/\s]+)/i", $input, $m)) {
+            $handle = $m[1];
+        } elseif (preg_match('/^[a-zA-Z0-9_.-]+$/', $input)) {
+            $handle = $input;
+        }
+
+        if (!$handle) {
+            $message = "Please enter a valid CodeChef username or profile URL.";
             $messageType = 'error';
         } else {
-            $handle = $m[1];
+            $pdo->exec("INSERT IGNORE INTO platforms (platform_name, base_url) VALUES ('CodeChef', 'https://www.codechef.com')");
+            $platform_id = $pdo->query("SELECT id FROM platforms WHERE platform_name='CodeChef'")->fetch()['id'];
 
-            $pdo->exec("INSERT IGNORE INTO platforms (platform_name, base_url)
-                        VALUES ('CodeChef', 'https://www.codechef.com')");
-            $platform_id = $pdo->query("SELECT id FROM platforms WHERE platform_name='CodeChef'")
-                               ->fetch()['id'];
-
-            $pdo->prepare("INSERT IGNORE INTO user_platform_profiles
-                (user_id, platform_id, handle, last_sync_date)
-                VALUES (?, ?, ?, NOW())")->execute([$user_id, $platform_id, $handle]);
+            $pdo->prepare("INSERT INTO user_platform_profiles (user_id, platform_id, handle, last_sync_date)
+                           VALUES (?, ?, ?, NOW())
+                           ON DUPLICATE KEY UPDATE handle=VALUES(handle), last_sync_date=NOW()")->execute([$user_id, $platform_id, $handle]);
 
             $stmt = $pdo->prepare("SELECT id FROM user_platform_profiles WHERE user_id=? AND platform_id=?");
             $stmt->execute([$user_id, $platform_id]);
             $profile_id = $stmt->fetch()['id'];
 
             include 'sync_cc.php';
-            $message = "CodeChef profile ($handle) synchronized successfully!";
+            $message = "CodeChef account (@$handle) synchronized successfully!";
             $messageType = 'success';
         }
     }
@@ -124,8 +133,8 @@ include 'header.php';
 <section class="surface">
     <div class="surface-header">
         <div>
-            <h2>Manage Connected Platforms</h2>
-            <p>Connect your competitive handles once. Unified CP auto-captures rating changes, contests, and problem tallies on every refresh.</p>
+            <h2>Manage & Sync Your Platforms</h2>
+            <p>Simply enter your handle or profile URL below. Unified CP fetches your rating history, official ranks, and solved problems automatically!</p>
         </div>
         <a href="dashboard.php" class="btn btn-secondary btn-sm">
             <span>&larr; Back to Dashboard</span>
@@ -150,14 +159,14 @@ include 'header.php';
                         <?= $cfHandle ? '@' . htmlspecialchars($cfHandle) : 'Not Linked' ?>
                     </span>
                 </div>
-                <h3>Codeforces Profile</h3>
-                <p>Syncs your official rating trajectory, title (Expert, Master, etc.), and contest history.</p>
+                <h3>Codeforces Handle</h3>
+                <p>Fetches verified rating deltas, title (Newbie, Expert, etc.), and contest history automatically.</p>
             </div>
             
             <form method="post" action="manage_platforms.php" style="margin-top:16px;">
                 <div class="form-group">
-                    <label for="cf-profile">Profile URL</label>
-                    <input id="cf-profile" type="url" name="profile_url" placeholder="https://codeforces.com/profile/handle" value="<?= $cfHandle ? htmlspecialchars('https://codeforces.com/profile/' . $cfHandle) : '' ?>" required>
+                    <label for="cf-profile">Handle or Profile URL</label>
+                    <input id="cf-profile" type="text" name="profile_url" placeholder="e.g. nitish__0708" value="<?= htmlspecialchars($cfHandle) ?>" required>
                 </div>
                 <button type="submit" name="fetch_cf" class="btn btn-primary" style="width:100%;">
                     <span>Sync Codeforces</span>
@@ -174,14 +183,14 @@ include 'header.php';
                         <?= $lcHandle ? '@' . htmlspecialchars($lcHandle) : 'Not Linked' ?>
                     </span>
                 </div>
-                <h3>LeetCode Profile</h3>
-                <p>Fetches GraphQL contest history, rank percentiles, and counts of Easy, Medium, and Hard solves.</p>
+                <h3>LeetCode Username</h3>
+                <p>Syncs contest rankings, ratings, and total problems solved (Easy, Medium, Hard).</p>
             </div>
             
             <form method="post" action="manage_platforms.php" style="margin-top:16px;">
                 <div class="form-group">
-                    <label for="lc-profile">Profile URL</label>
-                    <input id="lc-profile" type="url" name="lc_url" placeholder="https://leetcode.com/u/handle/" value="<?= $lcHandle ? htmlspecialchars('https://leetcode.com/u/' . $lcHandle . '/') : '' ?>" required>
+                    <label for="lc-profile">Username or Profile URL</label>
+                    <input id="lc-profile" type="text" name="lc_url" placeholder="e.g. nitish__0708" value="<?= htmlspecialchars($lcHandle) ?>" required>
                 </div>
                 <button type="submit" name="fetch_lc" class="btn btn-primary" style="width:100%;">
                     <span>Sync LeetCode</span>
@@ -198,14 +207,14 @@ include 'header.php';
                         <?= $ccHandle ? '@' . htmlspecialchars($ccHandle) : 'Not Linked' ?>
                     </span>
                 </div>
-                <h3>CodeChef Profile</h3>
-                <p>Captures your star rating (1★ to 7★), division rating, and contests participated in.</p>
+                <h3>CodeChef Handle</h3>
+                <p>Scrapes star tier (1★ to 7★), division rating, and contest ranks in real-time.</p>
             </div>
             
             <form method="post" action="manage_platforms.php" style="margin-top:16px;">
                 <div class="form-group">
-                    <label for="cc-profile">Profile URL</label>
-                    <input id="cc-profile" type="url" name="cc_url" placeholder="https://www.codechef.com/users/handle" value="<?= $ccHandle ? htmlspecialchars('https://www.codechef.com/users/' . $ccHandle) : '' ?>" required>
+                    <label for="cc-profile">Handle or Profile URL</label>
+                    <input id="cc-profile" type="text" name="cc_url" placeholder="e.g. nitish_0_8" value="<?= htmlspecialchars($ccHandle) ?>" required>
                 </div>
                 <button type="submit" name="fetch_cc" class="btn btn-primary" style="width:100%;">
                     <span>Sync CodeChef</span>
@@ -220,7 +229,7 @@ include 'header.php';
     <div class="surface-header">
         <div>
             <h3>Your Connected Profiles</h3>
-            <p>Snapshot of connected platforms and their latest synchronization times.</p>
+            <p>Live snapshot of your platform standings.</p>
         </div>
     </div>
     
@@ -241,7 +250,7 @@ include 'header.php';
                 <?php if (empty($profiles)): ?>
                     <tr>
                         <td colspan="7" style="text-align:center; padding: 24px; color: var(--clr-text-muted);">
-                            No platforms connected yet. Paste your profile URL in any card above to get started.
+                            No platforms linked yet. Type your username above and click Sync to pull your stats automatically!
                         </td>
                     </tr>
                 <?php else: ?>

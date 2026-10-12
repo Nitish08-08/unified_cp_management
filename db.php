@@ -1,5 +1,25 @@
 <?php
-// db.php - Database connection with SSL & environment variable support
+// db.php - Database connection with .env loader & SSL support
+
+// Load .env file if present
+$envFile = __DIR__ . '/.env';
+if (file_exists($envFile)) {
+    $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        $line = trim($line);
+        if ($line === '' || strpos($line, '#') === 0) {
+            continue;
+        }
+        if (strpos($line, '=') !== false) {
+            list($name, $value) = explode('=', $line, 2);
+            $name = trim($name);
+            $value = trim($value, " \t\n\r\0\x0B\"'");
+            putenv("$name=$value");
+            $_ENV[$name] = $value;
+            $_SERVER[$name] = $value;
+        }
+    }
+}
 
 if (!function_exists('env_val')) {
     function env_val($key, $default = null) {
@@ -17,12 +37,12 @@ if (!function_exists('env_val')) {
     }
 }
 
-// 1. Connection credentials (Environment Variables take precedence; fallback to TiDB Cloud cluster)
-$host = env_val('DB_HOST') ?: (env_val('MYSQLHOST') ?: 'gateway01.ap-northeast-1.prod.aws.tidbcloud.com');
-$port = env_val('DB_PORT') ?: (env_val('MYSQLPORT') ?: '4000');
-$db   = env_val('DB_NAME') ?: (env_val('MYSQLDATABASE') ?: 'competitive_cp');
-$user = env_val('DB_USER') ?: (env_val('MYSQLUSER') ?: 'jB2n4xjUGg37Ctb.root');
-$pass = env_val('DB_PASS') ?? (env_val('MYSQLPASSWORD') ?? '1c5Egb0MK4f8iCxA');
+// 1. Connection credentials
+$host = env_val('DB_HOST', 'gateway01.ap-northeast-1.prod.aws.tidbcloud.com');
+$port = env_val('DB_PORT', '4000');
+$db   = env_val('DB_NAME', 'competitive_cp');
+$user = env_val('DB_USER', 'jB2n4xjUGg37Ctb.root');
+$pass = env_val('DB_PASS', '1c5Egb0MK4f8iCxA');
 $charset = 'utf8mb4';
 
 // Check for DATABASE_URL / MYSQL_URL
@@ -44,8 +64,9 @@ $options = [
     PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => false,
 ];
 
-// Check for system CA bundle on Vercel / Linux containers
+// Check bundled or system CA bundle for SSL
 $caLocations = [
+    __DIR__ . '/certs/ca.pem',
     env_val('MYSQL_ATTR_SSL_CA'),
     '/etc/ssl/certs/ca-certificates.crt',
     '/etc/pki/tls/certs/ca-bundle.crt',

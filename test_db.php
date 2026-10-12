@@ -1,5 +1,5 @@
 <?php
-// test_db.php - Comprehensive diagnostic for TiDB SSL & mysqli
+// test_db.php - Verification script: auto-initialize tables, insert, and fetch from TiDB Cloud
 ob_start();
 error_reporting(E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED);
 ini_set('display_errors', '0');
@@ -13,102 +13,74 @@ $user = 'jB2n4xjUGg37Ctb.root';
 $pass = '1c5Egb0MK4f8iCxA';
 $caFile = __DIR__ . '/certs/ca.pem';
 
-$info = [
-    'php_version' => PHP_VERSION,
-    'constants' => [
-        'PDO_MYSQL_ATTR_SSL_CA' => defined('PDO::MYSQL_ATTR_SSL_CA') ? PDO::MYSQL_ATTR_SSL_CA : null,
-        'PDO_MYSQL_ATTR_SSL_VERIFY_SERVER_CERT' => defined('PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT') ? PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT : null,
-        'Pdo_Mysql_ATTR_SSL_CA' => defined('Pdo\Mysql::ATTR_SSL_CA') ? constant('Pdo\Mysql::ATTR_SSL_CA') : null,
-        'Pdo_Mysql_ATTR_SSL_VERIFY_SERVER_CERT' => defined('Pdo\Mysql::ATTR_SSL_VERIFY_SERVER_CERT') ? constant('Pdo\Mysql::ATTR_SSL_VERIFY_SERVER_CERT') : null,
-    ],
-    'tests' => [],
+$attrCa = defined('Pdo\Mysql::ATTR_SSL_CA') ? constant('Pdo\Mysql::ATTR_SSL_CA') : (defined('PDO::MYSQL_ATTR_SSL_CA') ? PDO::MYSQL_ATTR_SSL_CA : 1008);
+$attrVerify = defined('Pdo\Mysql::ATTR_SSL_VERIFY_SERVER_CERT') ? constant('Pdo\Mysql::ATTR_SSL_VERIFY_SERVER_CERT') : (defined('PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT') ? PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT : 1013);
+
+$options = [
+    PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+    $attrCa                      => $caFile,
+    $attrVerify                  => false,
 ];
 
-// Test 1: MySQLi with mysqli_ssl_set
-if (extension_loaded('mysqli')) {
-    $m = mysqli_init();
-    mysqli_ssl_set($m, null, null, $caFile, null, null);
-    mysqli_options($m, MYSQLI_OPT_SSL_VERIFY_SERVER_CERT, false);
-    $connected = @mysqli_real_connect($m, $host, $user, $pass, $db, $port, null, MYSQLI_CLIENT_SSL);
-    if ($connected) {
-        $info['tests']['mysqli_with_ca_noverify'] = 'SUCCESS';
-        // Test query
-        $res = mysqli_query($m, "SHOW TABLES;");
-        $tables = [];
-        while ($row = mysqli_fetch_row($res)) {
-            $tables[] = $row[0];
+try {
+    $dsn = "mysql:host=$host;port=$port;dbname=$db;charset=utf8mb4";
+    $pdo = new PDO($dsn, $user, $pass, $options);
+
+    // 1. Check existing tables
+    $tables = $pdo->query("SHOW TABLES;")->fetchAll(PDO::FETCH_COLUMN);
+
+    // 2. Initialize schema if tables don't exist
+    $schemaInit = false;
+    if (!in_array('users', $tables)) {
+        $schemaFile = __DIR__ . '/clean_schema.sql';
+        if (file_exists($schemaFile)) {
+            $sqlContent = file_get_contents($schemaFile);
+            // Split and execute SQL statements
+            $statements = array_filter(array_map('trim', explode(';', $sqlContent)));
+            foreach ($statements as $stmt) {
+                if ($stmt !== '' && stripos($stmt, 'CREATE DATABASE') === false && stripos($stmt, 'USE ') === false) {
+                    $pdo->exec($stmt);
+                }
+            }
+            $tables = $pdo->query("SHOW TABLES;")->fetchAll(PDO::FETCH_COLUMN);
+            $schemaInit = true;
         }
-        $info['mysqli_tables'] = $tables;
-        mysqli_close($m);
-    } else {
-        $info['tests']['mysqli_with_ca_noverify'] = mysqli_connect_error() . ' (code ' . mysqli_connect_errno() . ')';
     }
 
-    // Test 1b: MySQLi with NO CA, just MYSQLI_CLIENT_SSL
-    $m2 = mysqli_init();
-    mysqli_options($m2, MYSQLI_OPT_SSL_VERIFY_SERVER_CERT, false);
-    $connected2 = @mysqli_real_connect($m2, $host, $user, $pass, $db, $port, null, MYSQLI_CLIENT_SSL);
-    if ($connected2) {
-        $info['tests']['mysqli_noca_ssl'] = 'SUCCESS';
-        mysqli_close($m2);
-    } else {
-        $info['tests']['mysqli_noca_ssl'] = mysqli_connect_error() . ' (code ' . mysqli_connect_errno() . ')';
-    }
-} else {
-    $info['tests']['mysqli'] = 'extension not loaded';
+    // 3. Insert a test record into TiDB
+    $testTimestamp = time();
+    $testName = "TiDB Verification User ($testTimestamp)";
+    $testEmail = "tidb_user_{$testTimestamp}@example.com";
+    $testPassword = password_hash("securePassword123!", PASSWORD_DEFAULT);
+
+    $insertStmt = $pdo->prepare("INSERT INTO users (name, email, password_hash, join_date) VALUES (?, ?, ?, CURDATE())");
+    $insertStmt->execute([$testName, $testEmail, $testPassword]);
+    $insertedId = (int)$pdo->lastInsertId();
+
+    // 4. Fetch the inserted record from TiDB
+    $fetchStmt = $pdo->prepare("SELECT id, name, email, join_date FROM users WHERE id = ?");
+    $fetchStmt->execute([$insertedId]);
+    $fetchedRow = $fetchStmt->fetch();
+
+    // Also fetch platform list
+    $platforms = $pdo->query("SELECT id, platform_name, base_url FROM platforms ORDER BY id ASC")->fetchAll();
+
+    echo json_encode([
+        'status'                 => 'success',
+        'message'                => 'TiDB Cloud connection, insert, and fetch verified successfully!',
+        'database'               => $db,
+        'host'                   => $host,
+        'schema_auto_created'    => $schemaInit,
+        'tables_in_database'     => $tables,
+        'platforms_seeded'       => $platforms,
+        'inserted_record_id'     => $insertedId,
+        'fetched_record'         => $fetchedRow,
+    ], JSON_PRETTY_PRINT);
+
+} catch (Exception $e) {
+    echo json_encode([
+        'status'  => 'error',
+        'message' => $e->getMessage(),
+    ], JSON_PRETTY_PRINT);
 }
-
-// Test 2: PDO with different option combinations
-$attrCa = defined('Pdo\Mysql::ATTR_SSL_CA') ? constant('Pdo\Mysql::ATTR_SSL_CA') : (defined('PDO::MYSQL_ATTR_SSL_CA') ? PDO::MYSQL_ATTR_SSL_CA : 1007);
-$attrVerify = defined('Pdo\Mysql::ATTR_SSL_VERIFY_SERVER_CERT') ? constant('Pdo\Mysql::ATTR_SSL_VERIFY_SERVER_CERT') : (defined('PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT') ? PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT : 1014);
-
-$pdoConfigs = [
-    'pdo_ca_and_verify_false' => [
-        $attrCa => $caFile,
-        $attrVerify => false,
-    ],
-    'pdo_ca_and_verify_false_int' => [
-        1007 => $caFile,
-        1014 => false,
-    ],
-    'pdo_verify_false_only' => [
-        $attrVerify => false,
-    ],
-    'pdo_ca_only' => [
-        $attrCa => $caFile,
-    ],
-    'pdo_no_opts' => [],
-];
-
-foreach ($pdoConfigs as $name => $opts) {
-    $fullOpts = $opts + [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-    ];
-    try {
-        $p = new PDO("mysql:host=$host;port=$port;dbname=$db;charset=utf8mb4", $user, $pass, $fullOpts);
-        $info['tests'][$name] = 'SUCCESS';
-    } catch (PDOException $e) {
-        $info['tests'][$name] = $e->getMessage();
-    }
-}
-
-// Test 3: Raw socket SSL handshake to check TLS negotiation
-$streamContext = stream_context_create([
-    'ssl' => [
-        'verify_peer' => false,
-        'verify_peer_name' => false,
-        'allow_self_signed' => true,
-    ]
-]);
-$fp = @stream_socket_client("tcp://$host:$port", $errno, $errstr, 5, STREAM_CLIENT_CONNECT, $streamContext);
-if ($fp) {
-    // Read initial handshake packet from MySQL server
-    $packet = fread($fp, 1024);
-    $info['raw_tcp_greeting_bytes'] = strlen($packet);
-    fclose($fp);
-} else {
-    $info['raw_tcp_error'] = "$errstr ($errno)";
-}
-
-echo json_encode($info, JSON_PRETTY_PRINT);

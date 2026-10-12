@@ -1,6 +1,12 @@
 <?php
 // api/index.php - Serverless Entry Point & Front Controller for Vercel
 
+if (!ob_get_level()) {
+    ob_start();
+}
+error_reporting(E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED);
+ini_set('display_errors', '0');
+
 $uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
 $file = ltrim($uri, '/');
 

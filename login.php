@@ -12,7 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = $_POST['password'] ?? '';
 
     if ($pdo === null) {
-        $message = 'Database is not connected. Please configure your database credentials.';
+        $message = 'Database connection error: ' . ($dbConnectionError ?? 'Please verify your database credentials.');
     } else {
         try {
             $stmt = $pdo->prepare("SELECT id, name, password_hash FROM users WHERE email = ?");

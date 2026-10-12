@@ -11,7 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($name === '' || $email === '' || $password === '') {
         $message = 'All fields are required.';
     } elseif ($pdo === null) {
-        $message = 'Database is not connected. Please configure your database credentials.';
+        $message = 'Database connection error: ' . ($dbConnectionError ?? 'Please check your database credentials in Vercel settings.');
     } else {
         try {
             $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ?");

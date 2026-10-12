@@ -5,83 +5,125 @@ $isAuthenticated = !empty($_SESSION['user_id']);
 
 include 'header.php';
 ?>
-<section class="surface" style="overflow:hidden; position:relative;">
-    <div style="position:absolute; inset:0; background:linear-gradient(135deg, rgba(37,99,235,0.08), rgba(14,165,233,0.08)); z-index:0;"></div>
-    <div style="position:relative; z-index:1; display:flex; flex-direction:column; gap:18px;">
-        <span class="chip">Unified Competitive Programming</span>
-        <h1 style="font-size:2.5rem; font-weight:700; margin:0; color:var(--clr-text);">Stay in sync with every platform you grind.</h1>
-        <p style="max-width:620px; font-size:1.05rem; color:var(--clr-muted);">
-            Unified CP pulls contests, ratings, solved problems, and topic analytics from Codeforces, LeetCode, and CodeChef. Compare progress, spot weak topics, and refresh data in seconds.
+
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="hero-content">
+        <span class="hero-pill">
+            <span>✨</span> Next-Gen Competitive Programming Hub
+        </span>
+        <h1 class="hero-title">Stay in sync with every platform you grind.</h1>
+        <p class="hero-desc">
+            Unified CP aggregates your contests, rating trajectories, solved problems, and topic weaknesses across <strong>Codeforces</strong>, <strong>LeetCode</strong>, and <strong>CodeChef</strong> into one unified developer dashboard.
         </p>
-        <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:center;">
+        
+        <div class="hero-actions">
             <?php if ($isAuthenticated): ?>
-                <a class="btn-refresh" href="dashboard.php">Go to Dashboard</a>
-                <a class="btn-refresh" style="background:var(--clr-accent-muted); color:var(--clr-accent);" href="manage_platforms.php">Manage Platforms</a>
+                <a class="btn btn-primary" href="dashboard.php">
+                    <span>⚡ Launch Dashboard</span>
+                </a>
+                <a class="btn btn-secondary" href="manage_platforms.php">
+                    <span>🔗 Manage Platforms</span>
+                </a>
             <?php else: ?>
-                <a class="btn-refresh" href="register.php">Create Account</a>
-                <a class="btn-refresh" style="background:var(--clr-accent-muted); color:var(--clr-accent);" href="login.php">Sign In</a>
+                <a class="btn btn-primary" href="register.php">
+                    <span>🚀 Get Started Free</span>
+                </a>
+                <a class="btn btn-secondary" href="login.php">
+                    <span>🔑 Sign In</span>
+                </a>
             <?php endif; ?>
-            <span style="font-size:0.9rem; color:var(--clr-muted);">No manual spreadsheets. Your stats refresh automatically.</span>
         </div>
     </div>
 </section>
 
-<section class="surface" style="display:grid; gap:24px;">
-    <h2 style="margin-bottom:0;">What You Get</h2>
-    <div class="summary-grid" style="margin-bottom:0;">
+<!-- Live Platform Highlights -->
+<section style="margin-bottom: 36px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3>Supported Platforms</h3>
+        <span style="font-size: 0.85rem; color: var(--clr-text-muted);">Real-time API & GraphQL synchronization</span>
+    </div>
+    
+    <div class="summary-grid" style="margin: 0;">
         <div class="summary-card">
-            <h4>Unified Dashboard</h4>
-            <p style="margin:0;">Track contests, ratings, and performance score side-by-side for every connected platform.</p>
+            <div class="card-top">
+                <span class="badge-platform codeforces">Codeforces</span>
+                <span class="card-icon">⚡</span>
+            </div>
+            <div class="metric" style="font-size: 1.5rem;">API Connected</div>
+            <div class="meta">Syncs official rating, rank title, submission history, and topic tags.</div>
         </div>
+
         <div class="summary-card">
-            <h4>Topic Intelligence</h4>
-            <p style="margin:0;">Identify strong and weak topics instantly using recent solves and historical data.</p>
+            <div class="card-top">
+                <span class="badge-platform leetcode">LeetCode</span>
+                <span class="card-icon">🧩</span>
+            </div>
+            <div class="metric" style="font-size: 1.5rem;">GraphQL Sync</div>
+            <div class="meta">Pulls total solved counts (Easy / Medium / Hard) and global ranking.</div>
         </div>
+
         <div class="summary-card">
-            <h4>Automatic Sync</h4>
-            <p style="margin:0;">One click refresh keeps ratings, contest logs, and solved problems up to date.</p>
+            <div class="card-top">
+                <span class="badge-platform codechef">CodeChef</span>
+                <span class="card-icon">👨‍🍳</span>
+            </div>
+            <div class="metric" style="font-size: 1.5rem;">Profile Scraper</div>
+            <div class="meta">Captures stars, current division rating, and contest ranks.</div>
         </div>
     </div>
 </section>
 
-<section class="surface" style="display:grid; gap:18px;">
-    <h2 style="margin-bottom:0;">Get Started in 3 Steps</h2>
-    <div class="summary-grid" style="margin-bottom:0; grid-template-columns:repeat(auto-fit,minmax(220px,1fr));">
-        <div class="summary-card" style="border-left:4px solid var(--clr-accent);">
-            <h4>1. Create Profile</h4>
-            <p style="margin:0;">
-                Register or sign in. Every account gets instant access to the dashboard and dark mode UI.
-            </p>
+<!-- Feature Showcase -->
+<section class="surface">
+    <div class="surface-header">
+        <div>
+            <h2>Everything You Need To Elevate Your CP Rating</h2>
+            <p>Designed for competitive coders who want actionable analytics instead of manual spreadsheets.</p>
         </div>
-        <div class="summary-card" style="border-left:4px solid #10b981;">
-            <h4>2. Link Platforms</h4>
-            <p style="margin:0;">
-                Paste your Codeforces, LeetCode, and CodeChef URLs. We fetch handles, ratings, and history right away.
-            </p>
+    </div>
+
+    <div class="features-grid" style="margin: 12px 0 0;">
+        <div class="feature-card">
+            <div class="feature-icon">📊</div>
+            <h3>Composite Performance Score</h3>
+            <p>A smart normalized index (0–100) combining your contest frequency, solve volume, and peak ratings across all platforms.</p>
         </div>
-        <div class="summary-card" style="border-left:4px solid #f59e0b;">
-            <h4>3. Analyze & Improve</h4>
-            <p style="margin:0;">
-                Review performance score, topic strengths, and contest deltas to plan your next practice sprint.
-            </p>
+
+        <div class="feature-card">
+            <div class="feature-icon">🎯</div>
+            <h3>Topic Weakness Radar</h3>
+            <p>Identifies your algorithmic blind spots (e.g. DP, Segment Trees, Graph Theory) based on recent contest solve patterns.</p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">📈</div>
+            <h3>Rating & Delta Trajectory</h3>
+            <p>Visualize rating swings and contest ranks chronologically to spot momentum shifts and practice trends.</p>
         </div>
     </div>
 </section>
 
-<section class="surface" style="display:grid; gap:20px;">
-    <h2 style="margin-bottom:0;">Need Inspiration?</h2>
-    <div class="summary-grid" style="margin-bottom:0; grid-template-columns:repeat(auto-fit,minmax(240px,1fr));">
-        <div class="summary-card">
-            <h4>Recent Solves</h4>
-            <p style="margin:0;">Browse your latest accepted submissions and jump straight to the problems from the Problems page.</p>
+<!-- Steps Guide -->
+<section class="surface">
+    <h2>Get Started in 3 Simple Steps</h2>
+    <div class="features-grid" style="margin-top: 16px;">
+        <div class="feature-card" style="border-top: 3px solid var(--clr-primary);">
+            <span class="chip" style="margin-bottom: 12px;">Step 1</span>
+            <h3>Create Account</h3>
+            <p>Sign up in seconds to access your customized dashboard with automatic dark mode support.</p>
         </div>
-        <div class="summary-card">
-            <h4>Contest Planner</h4>
-            <p style="margin:0;">Record practice or virtual contests to keep every performance in one place.</p>
+
+        <div class="feature-card" style="border-top: 3px solid var(--clr-success);">
+            <span class="chip" style="margin-bottom: 12px;">Step 2</span>
+            <h3>Paste Profile Handles</h3>
+            <p>Enter your handles for Codeforces, LeetCode, or CodeChef. We pull your entire stats history right away.</p>
         </div>
-        <div class="summary-card">
-            <h4>Performance Score</h4>
-            <p style="margin:0;">Compare friends with a unified 0-100 score blending volume, rating, contests, and recency.</p>
+
+        <div class="feature-card" style="border-top: 3px solid var(--clr-warning);">
+            <span class="chip" style="margin-bottom: 12px;">Step 3</span>
+            <h3>Analyze & Dominate</h3>
+            <p>Review your composite score, track delta swings, and target your weakest algorithmic topics.</p>
         </div>
     </div>
 </section>

@@ -1,111 +1,198 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Unified CP – Welcome</title>
-    <style>
-        :root {
-            color-scheme: light dark;
-            --bg: #0f172a;
-            --surface: #111a2f;
-            --text: #e2e8f0;
-            --muted: #94a3b8;
-            --accent: #60a5fa;
-        }
-
-        body {
-            margin: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-        }
-
-        main {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 60px 20px;
-        }
-
-        .card {
-            max-width: 640px;
-            background: var(--surface);
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 25px 45px rgba(15, 23, 42, 0.45);
-            text-align: center;
-        }
-
-        h1 {
-            margin: 0 0 14px;
-            font-size: 2.4rem;
-        }
-
-        p {
-            margin: 0 0 24px;
-            color: var(--muted);
-            line-height: 1.6;
-        }
-
-        .actions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-            justify-content: center;
-        }
-
-        a.button {
-            padding: 12px 22px;
-            border-radius: 999px;
-            font-weight: 600;
-            text-decoration: none;
-            color: #0b1220;
-            background: var(--accent);
-            box-shadow: 0 15px 34px rgba(96, 165, 250, 0.35);
-            transition: transform 0.25s ease, box-shadow 0.3s ease;
-        }
-
-        a.button.secondary {
-            background: rgba(96, 165, 250, 0.15);
-            color: var(--accent);
-            box-shadow: none;
-        }
-
-        a.button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 20px 36px rgba(96, 165, 250, 0.45);
-        }
-
-        footer {
-            padding: 18px 0;
-            text-align: center;
-            color: var(--muted);
-            font-size: 0.9rem;
-        }
-    </style>
+    <title>Unified CP — Competitive Programming Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <script>
+        (function () {
+            try {
+                const storedTheme = window.localStorage.getItem('ucp-theme');
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                const theme = storedTheme || (prefersDark ? 'dark' : 'light');
+                document.documentElement.setAttribute('data-theme', theme);
+            } catch (err) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
 </head>
 <body>
-    <main>
-        <div class="card">
-            <span style="display:inline-block; padding:6px 14px; border-radius:999px; background:rgba(96, 165, 250, 0.18); color:var(--accent); font-size:0.8rem; letter-spacing:0.08em; text-transform:uppercase;">Unified Competitive Programming</span>
-            <h1>Welcome to Unified CP</h1>
-            <p>
-                Track your Codeforces, LeetCode, and CodeChef journeys in one pane of glass. Sync contests, solved problems, topic analytics, and your composite performance score with a single click.
-            </p>
-            <div class="actions">
-                <a class="button" href="index.php">Launch App</a>
-                <a class="button secondary" href="register.php">Create Account</a>
-                <a class="button secondary" href="login.php">Sign In</a>
+    <header class="navbar">
+        <div class="nav-left">
+            <a href="index.html" class="nav-brand">
+                <span class="brand-badge">{CP}</span>
+                <span class="brand-title">
+                    Unified CP
+                    <span class="brand-tag">PRO</span>
+                </span>
+            </a>
+        </div>
+        <div class="nav-actions">
+            <a href="login.php" class="nav-link">Sign In</a>
+            <a href="register.php" class="btn btn-primary btn-sm">Get Started</a>
+            <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Toggle color mode">
+                <span class="icon-sun" style="display:none;">☀️</span>
+                <span class="icon-moon">🌙</span>
+                <span class="toggle-label">Theme</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="page-container">
+        <!-- Hero Section -->
+        <section class="hero-section">
+            <div class="hero-content">
+                <span class="hero-pill">⚡ Multi-Platform Sync for Competitive Coders</span>
+                <h1 class="hero-title">Track your Codeforces, LeetCode & CodeChef journey in one place.</h1>
+                <p class="hero-desc">
+                    No more fragmented profiles and manual spreadsheets. Unified CP automatically aggregates your contest ratings, submission streaks, solved problems, and topic analytics into a single high-performance dashboard.
+                </p>
+                <div class="hero-actions">
+                    <a class="btn btn-primary" href="index.php">
+                        <span>🚀 Launch Web App</span>
+                    </a>
+                    <a class="btn btn-secondary" href="register.php">
+                        <span>✨ Create Free Account</span>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Live Metrics Preview -->
+        <section class="surface">
+            <div class="surface-header">
+                <div>
+                    <h2>Live Dashboard Analytics Preview</h2>
+                    <p>What your unified stats look like once you connect your platform handles.</p>
+                </div>
+                <span class="badge-platform codeforces">Live Multi-Sync</span>
+            </div>
+
+            <div class="summary-grid">
+                <div class="summary-card">
+                    <div class="card-top">
+                        <h4>Performance Score</h4>
+                        <span class="card-icon">⚡</span>
+                    </div>
+                    <div class="metric" data-count="84.6">84.6</div>
+                    <div class="meta">Composite (0-100) benchmark across volume, rating, and recency.</div>
+                </div>
+
+                <div class="summary-card">
+                    <div class="card-top">
+                        <h4>Problems Solved</h4>
+                        <span class="card-icon">🧩</span>
+                    </div>
+                    <div class="metric" data-count="1480">1,480</div>
+                    <div class="meta">Cumulative verified solves across all connected platforms.</div>
+                </div>
+
+                <div class="summary-card">
+                    <div class="card-top">
+                        <h4>Contests Attended</h4>
+                        <span class="card-icon">🏆</span>
+                    </div>
+                    <div class="metric" data-count="92">92</div>
+                    <div class="meta">Official rounds with recorded percentile and rating changes.</div>
+                </div>
+
+                <div class="summary-card">
+                    <div class="card-top">
+                        <h4>Peak Rating</h4>
+                        <span class="card-icon">📈</span>
+                    </div>
+                    <div class="metric" data-count="1942">1,942</div>
+                    <div class="meta">Top rating milestone recorded (Candidate Master / Knight).</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Supported Platforms Section -->
+        <section class="surface">
+            <h2>Seamless Integration with Top Platforms</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon" style="background: var(--clr-codeforces-bg); color: var(--clr-codeforces);">CF</div>
+                    <h3>Codeforces</h3>
+                    <p>Fetches real-time handles, rank titles (e.g. Expert, Master), rating trajectory graphs, and tagged problem submissions directly via the official Codeforces API.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon" style="background: var(--clr-leetcode-bg); color: var(--clr-leetcode);">LC</div>
+                    <h3>LeetCode</h3>
+                    <p>Leverages GraphQL endpoints to extract total questions solved by difficulty tier (Easy, Medium, Hard), contest rating changes, and profile streaks.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon" style="background: var(--clr-codechef-bg); color: var(--clr-codechef);">CC</div>
+                    <h3>CodeChef</h3>
+                    <p>Monitors stars (1★ to 7★), division ratings, and Long/Cook-Off/Starters contest performances automatically.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Topic Strength Radar Preview -->
+        <section class="surface">
+            <h2>Topic Strength & Weakness Analysis</h2>
+            <p>Automatically classifies your problem history into algorithmic categories so you can target areas that need practice.</p>
+
+            <div class="topic-grid">
+                <div class="topic-panel">
+                    <h4>🟢 Strong Topics (High Solves)</h4>
+                    <ul class="topic-list">
+                        <li>
+                            <span>Dynamic Programming</span>
+                            <span>342 solves (32%)</span>
+                        </li>
+                        <li>
+                            <span>Graphs & Trees (DFS / BFS)</span>
+                            <span>218 solves (21%)</span>
+                        </li>
+                        <li>
+                            <span>Binary Search & Two Pointers</span>
+                            <span>185 solves (18%)</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="topic-panel">
+                    <h4>🔴 Areas for Improvement</h4>
+                    <ul class="topic-list">
+                        <li>
+                            <span>Segment Tree & Fenwick Tree</span>
+                            <span>14 solves (1%)</span>
+                        </li>
+                        <li>
+                            <span>Game Theory & Combinatorics</span>
+                            <span>22 solves (2%)</span>
+                        </li>
+                        <li>
+                            <span>String Algorithms (KMP / Z-Algo)</span>
+                            <span>35 solves (3%)</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="app-footer">
+        <div class="footer-inner">
+            <div>
+                <strong>Unified CP Tracker</strong> &copy; 2026 &mdash; Built for competitive programmers.
+            </div>
+            <div style="display: flex; gap: 12px; align-items: center;">
+                <a href="index.php" class="btn btn-secondary btn-sm">Launch App</a>
+                <a href="login.php" class="btn btn-primary btn-sm">Sign In</a>
             </div>
         </div>
-    </main>
-    <footer>
-        <a href="index.php" style="color:inherit; text-decoration:none;">← Back to Home</a>
     </footer>
+
+    <script src="js/main.js"></script>
 </body>
 </html>

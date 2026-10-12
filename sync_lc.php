@@ -44,6 +44,7 @@ GRAPHQL;
         curl_setopt_array($ch, [
             CURLOPT_POST           => true,
             CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_USERAGENT      => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
             CURLOPT_POSTFIELDS     => $payload,
             CURLOPT_TIMEOUT        => 8,
@@ -133,8 +134,10 @@ $ch = curl_init("https://leetcode.com/graphql");
 curl_setopt_array($ch, [
     CURLOPT_POST           => true,
     CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_USERAGENT      => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     CURLOPT_HTTPHEADER     => ["Content-Type: application/json"],
     CURLOPT_POSTFIELDS     => $payload,
+    CURLOPT_TIMEOUT        => 10,
 ]);
 $response = curl_exec($ch);
 curl_close($ch);

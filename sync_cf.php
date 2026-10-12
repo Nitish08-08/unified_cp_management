@@ -5,7 +5,15 @@ if (!isset($pdo, $user_id, $handle, $platform_id, $profile_id)) {
 
 $userId = (int)$user_id;
 
-$infoResponse = @file_get_contents("https://codeforces.com/api/user.info?handles=" . urlencode($handle));
+$cfContext = stream_context_create([
+    'http' => [
+        'method'  => 'GET',
+        'timeout' => 8,
+        'header'  => "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36\r\nAccept: application/json\r\n",
+    ],
+]);
+
+$infoResponse = @file_get_contents("https://codeforces.com/api/user.info?handles=" . urlencode($handle), false, $cfContext);
 if (!$infoResponse) {
     return;
 }
@@ -22,7 +30,7 @@ $currentRating = (int)($userInfo['rating'] ?? 0);
 $maxRating = (int)($userInfo['maxRating'] ?? $currentRating);
 
 // Pull accepted submissions to compute solved count and keep the problem catalogue updated.
-$statusResponse = @file_get_contents("https://codeforces.com/api/user.status?handle=" . urlencode($handle));
+$statusResponse = @file_get_contents("https://codeforces.com/api/user.status?handle=" . urlencode($handle), false, $cfContext);
 $solvedProblems = [];
 
 if ($statusResponse) {
@@ -115,7 +123,7 @@ if ($totalSolved > 0) {
 }
 
 // Process contest rating history for ranked contests.
-$ratingHistoryResponse = @file_get_contents("https://codeforces.com/api/user.rating?handle=" . urlencode($handle));
+$ratingHistoryResponse = @file_get_contents("https://codeforces.com/api/user.rating?handle=" . urlencode($handle), false, $cfContext);
 if ($ratingHistoryResponse) {
     $historyPayload = json_decode($ratingHistoryResponse, true);
     if (is_array($historyPayload) && ($historyPayload['status'] ?? '') === 'OK') {

@@ -1,5 +1,5 @@
 <?php
-// db.php - Database connection with multi-strategy SSL & .env support
+// db.php - Resilient TiDB Cloud & MySQL connection handler
 
 if (!ob_get_level()) {
     ob_start();
@@ -67,56 +67,99 @@ if ($dbUrl = (env_val('DATABASE_URL') ?: env_val('MYSQL_URL'))) {
     }
 }
 
-$dsn = "mysql:host=$host;port=$port;dbname=$db;charset=$charset";
+// Locate CA certificate bundle for cloud SSL
+$caCandidates = [
+    __DIR__ . '/certs/ca.pem',
+    '/etc/pki/tls/certs/ca-bundle.crt',
+    '/etc/ssl/certs/ca-certificates.crt',
+    '/etc/ssl/cert.pem',
+];
+$foundCa = null;
+foreach ($caCandidates as $caPath) {
+    if (file_exists($caPath) && is_readable($caPath)) {
+        $foundCa = $caPath;
+        break;
+    }
+}
 
-// Connection strategies to handle cloud TLS / OpenSSL in serverless environments
+// Build SSL connection strategies (1007 = MYSQL_ATTR_SSL_CA, 1014 = MYSQL_ATTR_SSL_VERIFY_SERVER_CERT)
 $strategies = [];
 
-// Strategy 1: Standard auto-negotiated TLS (recommended for PHP 8.2+ mysqlnd)
-$strategies[] = [
-    PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-];
-
-// Strategy 2: Bundled Mozilla CA certificate (if present)
-if (file_exists(__DIR__ . '/certs/ca.pem')) {
+if ($foundCa) {
+    // Strategy 1: CA file with verify server cert disabled (most reliable across clouds)
     $strategies[] = [
         PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        1007                         => __DIR__ . '/certs/ca.pem',
+        1007                         => $foundCa,
+        1014                         => false,
+    ];
+
+    // Strategy 2: CA file with verify server cert enabled
+    $strategies[] = [
+        PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        1007                         => $foundCa,
+        1014                         => true,
     ];
 }
 
-// Strategy 3: System CA certificate on Linux / Vercel containers
+// Strategy 3: AWS Lambda system CA
+if (file_exists('/etc/pki/tls/certs/ca-bundle.crt')) {
+    $strategies[] = [
+        PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        1007                         => '/etc/pki/tls/certs/ca-bundle.crt',
+        1014                         => false,
+    ];
+}
+
+// Strategy 4: Linux system CA
 if (file_exists('/etc/ssl/certs/ca-certificates.crt')) {
     $strategies[] = [
         PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         1007                         => '/etc/ssl/certs/ca-certificates.crt',
+        1014                         => false,
     ];
 }
 
-// Strategy 4: Explicit disable verify server cert
+// Strategy 5: Plain connection (for local development or proxies)
 $strategies[] = [
     PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-    1014                         => false,
 ];
 
 $pdo = null;
 $dbConnectionError = null;
 
+$dsn = "mysql:host=$host;port=$port;dbname=$db;charset=$charset";
+
 foreach ($strategies as $opts) {
     try {
         $pdo = new PDO($dsn, $user, $pass, $opts);
         $dbConnectionError = null;
-        break; // Successfully connected!
+        break;
     } catch (PDOException $e) {
         $dbConnectionError = $e->getMessage();
+
+        // If database does not exist yet on TiDB Cloud, auto-create it
+        if (strpos($dbConnectionError, '1049') !== false || stripos($dbConnectionError, 'Unknown database') !== false) {
+            try {
+                $rootDsn = "mysql:host=$host;port=$port;charset=$charset";
+                $rootPdo = new PDO($rootDsn, $user, $pass, $opts);
+                $rootPdo->exec("CREATE DATABASE IF NOT EXISTS `$db`;");
+                $rootPdo->exec("USE `$db`;");
+                $pdo = $rootPdo;
+                $dbConnectionError = null;
+                break;
+            } catch (PDOException $e2) {
+                // Keep trying
+            }
+        }
     }
 }
 
-// Localhost fallback for local development
+// Localhost fallback if TiDB unreachable from local machine
 if ($pdo === null && in_array($_SERVER['SERVER_NAME'] ?? '', ['localhost', '127.0.0.1'])) {
     try {
         $localDsn = "mysql:host=localhost;port=3306;dbname=competitive_cp;charset=utf8mb4";
@@ -127,6 +170,22 @@ if ($pdo === null && in_array($_SERVER['SERVER_NAME'] ?? '', ['localhost', '127.
         $dbConnectionError = null;
     } catch (PDOException $e2) {
         // Retain original error
+    }
+}
+
+// Ensure database schema is present if successfully connected
+if ($pdo !== null) {
+    try {
+        $tables = $pdo->query("SHOW TABLES;")->fetchAll(PDO::FETCH_COLUMN);
+        if (!in_array('users', $tables)) {
+            $schemaFile = __DIR__ . '/clean_schema.sql';
+            if (file_exists($schemaFile)) {
+                $sql = file_get_contents($schemaFile);
+                $pdo->exec($sql);
+            }
+        }
+    } catch (Exception $e) {
+        // Silently continue if tables already exist or permission error
     }
 }
 

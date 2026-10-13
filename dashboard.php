@@ -36,8 +36,12 @@ if ($pdo !== null) {
         $stmt = $pdo->prepare("SELECT * FROM aggregated_stats WHERE user_id = ?");
         $stmt->execute([$user_id]);
         $fetchedStats = $stmt->fetch();
-        if ($fetchedStats) {
+        if ($fetchedStats && isset($fetchedStats['consistency_score']) && $fetchedStats['consistency_score'] !== null) {
             $stats = $fetchedStats;
+        } else {
+            recalculateAggregatedStats($pdo, $user_id);
+            $stmt->execute([$user_id]);
+            $stats = $stmt->fetch() ?: $stats;
         }
 
         /* ----------------- Profiles (CF, LC, CC etc.) ----------------- */
@@ -163,20 +167,73 @@ include 'header.php';
         </a>
     </div>
 
+    <?php
+    $scoreValue       = isset($stats['composite_score']) && $stats['composite_score'] !== null ? (float)$stats['composite_score'] : 0.0;
+    $consistencyValue = isset($stats['consistency_score']) && $stats['consistency_score'] !== null ? (float)$stats['consistency_score'] : 0.0;
+    $skillValue       = isset($stats['problem_solving_score']) && $stats['problem_solving_score'] !== null ? (float)$stats['problem_solving_score'] : 0.0;
+
+    // Consistency Badge
+    if ($consistencyValue >= 80)     $cBadge = ['text' => '🔥 Streak Master',     'cls' => 'badge-emerald'];
+    elseif ($consistencyValue >= 60) $cBadge = ['text' => '⚡ Highly Consistent', 'cls' => 'badge-blue'];
+    elseif ($consistencyValue >= 40) $cBadge = ['text' => '📈 Steady Routine',   'cls' => 'badge-amber'];
+    else                              $cBadge = ['text' => '🌱 Building Habit',    'cls' => 'badge-gray'];
+
+    // Skill Tier Badge
+    if ($skillValue >= 80)     $sBadge = ['text' => '👑 Elite Solver',       'cls' => 'badge-purple'];
+    elseif ($skillValue >= 65) $sBadge = ['text' => '🚀 Advanced Solver',    'cls' => 'badge-blue'];
+    elseif ($skillValue >= 45) $sBadge = ['text' => '🎯 Proficient Solver',  'cls' => 'badge-emerald'];
+    elseif ($skillValue >= 25) $sBadge = ['text' => '💡 Intermediate',       'cls' => 'badge-amber'];
+    else                        $sBadge = ['text' => '🌱 Foundational',       'cls' => 'badge-gray'];
+    ?>
+
     <!-- Summary Metrics Grid -->
     <div class="summary-grid">
+        <!-- 1. Overall Performance Score -->
         <div class="summary-card">
             <div class="card-top">
                 <h4>Performance Score</h4>
                 <span class="card-icon">⚡</span>
             </div>
-            <?php $scoreValue = isset($stats['composite_score']) && $stats['composite_score'] !== null ? (float)$stats['composite_score'] : null; ?>
-            <div class="metric" data-count="<?= $scoreValue !== null ? $scoreValue : '0' ?>">
-                <?= $scoreValue !== null ? number_format($scoreValue, 1) : '—' ?>
+            <div class="metric" data-count="<?= $scoreValue ?>">
+                <?= number_format($scoreValue, 1) ?>
             </div>
-            <div class="meta">Composite (0-100) score blending solve volume, rating, and recency.</div>
+            <div class="meta">
+                <span class="badge badge-blue">Overall Index</span>
+                Balanced synthesis of problem-solving depth and active consistency.
+            </div>
         </div>
 
+        <!-- 2. Consistency Score -->
+        <div class="summary-card">
+            <div class="card-top">
+                <h4>Consistency Score</h4>
+                <span class="card-icon">🔥</span>
+            </div>
+            <div class="metric" data-count="<?= $consistencyValue ?>">
+                <?= number_format($consistencyValue, 1) ?>
+            </div>
+            <div class="meta">
+                <span class="badge <?= $cBadge['cls'] ?>"><?= $cBadge['text'] ?></span>
+                Recency decay, contest regularity, and multi-platform habit.
+            </div>
+        </div>
+
+        <!-- 3. Problem Solving Skills Score -->
+        <div class="summary-card">
+            <div class="card-top">
+                <h4>Solving Skills Score</h4>
+                <span class="card-icon">🎯</span>
+            </div>
+            <div class="metric" data-count="<?= $skillValue ?>">
+                <?= number_format($skillValue, 1) ?>
+            </div>
+            <div class="meta">
+                <span class="badge <?= $sBadge['cls'] ?>"><?= $sBadge['text'] ?></span>
+                Peak platform ratings, difficulty depth, and solve volume.
+            </div>
+        </div>
+
+        <!-- 4. Problems Solved -->
         <div class="summary-card">
             <div class="card-top">
                 <h4>Problems Solved</h4>
@@ -188,6 +245,7 @@ include 'header.php';
             <div class="meta">Cumulative verified solves across all connected platforms.</div>
         </div>
 
+        <!-- 5. Total Contests -->
         <div class="summary-card">
             <div class="card-top">
                 <h4>Total Contests</h4>
@@ -199,15 +257,53 @@ include 'header.php';
             <div class="meta">Official rounds with a recorded rank and participation record.</div>
         </div>
 
+        <!-- 6. Last Synced -->
         <div class="summary-card">
             <div class="card-top">
                 <h4>Last Synced</h4>
                 <span class="card-icon">🕒</span>
             </div>
-            <div class="metric" style="font-size: 1.25rem; font-family: var(--font-main);">
+            <div class="metric" style="font-size: 1.2rem; font-family: var(--font-main);">
                 <?= !empty($stats['last_updated']) ? htmlspecialchars($stats['last_updated']) : 'Never' ?>
             </div>
-            <div class="meta">Click a platform below to initiate a live background refresh.</div>
+            <div class="meta">Click a platform button below to trigger live synchronization.</div>
+        </div>
+    </div>
+
+    <!-- Mathematical Scoring Breakdown Card -->
+    <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--clr-border); border-radius: var(--radius-md); padding: 18px 22px; margin: 20px 0;">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; cursor: pointer;" onclick="document.getElementById('math-breakdown').style.display = document.getElementById('math-breakdown').style.display === 'none' ? 'block' : 'none';">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 1.2rem;">📐</span>
+                <span style="font-weight: 700; font-size: 0.95rem; color: var(--clr-text-main);">Mathematical Evaluation Model & Scoring Equations</span>
+                <span class="badge badge-purple" style="font-size: 0.7rem;">Verified Algorithm</span>
+            </div>
+            <span style="font-size: 0.85rem; color: var(--clr-primary); font-weight: 600;">Click to View Formulas &darr;</span>
+        </div>
+        <div id="math-breakdown" style="display: none; margin-top: 16px; border-top: 1px solid var(--clr-border); padding-top: 16px; font-size: 0.88rem; line-height: 1.7; color: var(--clr-text-muted);">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px;">
+                <div style="background: var(--clr-surface); padding: 14px; border-radius: var(--radius-sm); border: 1px solid var(--clr-border);">
+                    <h5 style="color: #60a5fa; margin-bottom: 6px;">1. Overall Performance ($S_{\text{overall}}$)</h5>
+                    <code style="display: block; background: rgba(0,0,0,0.25); padding: 6px 10px; border-radius: 4px; font-family: var(--font-mono); margin-bottom: 8px; color: var(--clr-text-main);">
+                        S_overall = 0.50 × S_skill + 0.50 × S_consistency
+                    </code>
+                    <p style="font-size: 0.8rem; margin: 0;">Equally balances algorithmic problem-solving power with continuous practice habits.</p>
+                </div>
+                <div style="background: var(--clr-surface); padding: 14px; border-radius: var(--radius-sm); border: 1px solid var(--clr-border);">
+                    <h5 style="color: #a78bfa; margin-bottom: 6px;">2. Problem Solving Skills ($S_{\text{skill}}$)</h5>
+                    <code style="display: block; background: rgba(0,0,0,0.25); padding: 6px 10px; border-radius: 4px; font-family: var(--font-mono); margin-bottom: 8px; color: var(--clr-text-main);">
+                        S_skill = 0.45·R_max + 0.35·V(N) + 0.20·D
+                    </code>
+                    <p style="font-size: 0.8rem; margin: 0;"><strong>R_max</strong>: Normalized peak platform rating; <strong>V(N)</strong>: Solve volume saturation; <strong>D</strong>: Weighted difficulty depth (Hard: 3.0×, Med: 1.8×, Easy: 0.8×).</p>
+                </div>
+                <div style="background: var(--clr-surface); padding: 14px; border-radius: var(--radius-sm); border: 1px solid var(--clr-border);">
+                    <h5 style="color: #34d399; margin-bottom: 6px;">3. Consistency Score ($S_{\text{consistency}}$)</h5>
+                    <code style="display: block; background: rgba(0,0,0,0.25); padding: 6px 10px; border-radius: 4px; font-family: var(--font-mono); margin-bottom: 8px; color: var(--clr-text-main);">
+                        S_consistency = 0.35·A(Δt) + 0.35·C_freq + 0.15·M + 0.15·P
+                    </code>
+                    <p style="font-size: 0.8rem; margin: 0;"><strong>A(Δt)</strong>: Recency decay (days elapsed); <strong>C_freq</strong>: Contest participation habit; <strong>M</strong>: Solve momentum; <strong>P</strong>: Multi-platform engagement.</p>
+                </div>
+            </div>
         </div>
     </div>
 

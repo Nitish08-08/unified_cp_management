@@ -103,6 +103,8 @@ CREATE TABLE IF NOT EXISTS `aggregated_stats` (
   `total_problems_solved` int(11) DEFAULT 0,
   `total_contests` int(11) DEFAULT 0,
   `highest_platform_id` int(11) DEFAULT NULL,
+  `consistency_score` decimal(6,2) DEFAULT 0.00,
+  `problem_solving_score` decimal(6,2) DEFAULT 0.00,
   `composite_score` decimal(6,2) DEFAULT NULL,
   `last_updated` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),

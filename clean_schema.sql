@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `name` varchar(100) NOT NULL,
   `email` varchar(150) NOT NULL,
   `password_hash` varchar(255) NOT NULL,
+  `role` varchar(20) NOT NULL DEFAULT 'student',
   `join_date` date DEFAULT CURRENT_DATE,
   PRIMARY KEY (`id`),
   UNIQUE KEY `email` (`email`)
@@ -118,3 +119,50 @@ INSERT INTO `platforms` (`id`, `platform_name`, `base_url`) VALUES
 (2, 'LeetCode', 'https://leetcode.com'),
 (3, 'CodeChef', 'https://www.codechef.com')
 ON DUPLICATE KEY UPDATE `base_url`=VALUES(`base_url`);
+
+-- 9. Mentor-Student Assignments
+CREATE TABLE IF NOT EXISTS `mentor_student_assignments` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `mentor_id` int(11) NOT NULL,
+  `student_id` int(11) NOT NULL,
+  `status` enum('pending', 'accepted', 'rejected') NOT NULL DEFAULT 'pending',
+  `invited_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  `responded_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `idx_mentor_student` (`mentor_id`, `student_id`),
+  KEY `idx_mentor` (`mentor_id`),
+  KEY `idx_student` (`student_id`),
+  CONSTRAINT `fk_msa_mentor` FOREIGN KEY (`mentor_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_msa_student` FOREIGN KEY (`student_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 10. Mentor Notes
+CREATE TABLE IF NOT EXISTS `mentor_notes` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `mentor_id` int(11) NOT NULL,
+  `student_id` int(11) NOT NULL,
+  `note_text` text NOT NULL,
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_mn_mentor_student` (`mentor_id`, `student_id`),
+  CONSTRAINT `fk_mn_mentor` FOREIGN KEY (`mentor_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_mn_student` FOREIGN KEY (`student_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 11. Mentor Goals
+CREATE TABLE IF NOT EXISTS `mentor_goals` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `mentor_id` int(11) NOT NULL,
+  `student_id` int(11) NOT NULL,
+  `goal_title` varchar(255) NOT NULL,
+  `target_problems` int(11) DEFAULT NULL,
+  `target_rating` int(11) DEFAULT NULL,
+  `target_date` date DEFAULT NULL,
+  `status` enum('pending', 'completed') NOT NULL DEFAULT 'pending',
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_mg_mentor_student` (`mentor_id`, `student_id`),
+  CONSTRAINT `fk_mg_mentor` FOREIGN KEY (`mentor_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_mg_student` FOREIGN KEY (`student_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+

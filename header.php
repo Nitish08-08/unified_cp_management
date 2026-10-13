@@ -50,20 +50,29 @@ $currentScript = basename($_SERVER['PHP_SELF'] ?? 'index.php');
     <nav class="nav-menu">
         <a href="index.php" class="nav-link <?= $currentScript === 'index.php' ? 'active' : '' ?>">Home</a>
         <?php if (!empty($_SESSION['user_id'])): ?>
-            <a href="dashboard.php" class="nav-link <?= $currentScript === 'dashboard.php' ? 'active' : '' ?>">Dashboard</a>
-            <a href="manage_platforms.php" class="nav-link <?= $currentScript === 'manage_platforms.php' ? 'active' : '' ?>">Platforms</a>
-            <a href="add_problem.php" class="nav-link <?= $currentScript === 'add_problem.php' ? 'active' : '' ?>">Problems</a>
-            <a href="record_contest.php" class="nav-link <?= $currentScript === 'record_contest.php' ? 'active' : '' ?>">Contests</a>
+            <?php if (($_SESSION['user_role'] ?? 'student') === 'mentor'): ?>
+                <a href="mentor_dashboard.php" class="nav-link <?= in_array($currentScript, ['mentor_dashboard.php', 'mentor_student_detail.php']) ? 'active' : '' ?>">Mentor Dashboard</a>
+            <?php else: ?>
+                <a href="dashboard.php" class="nav-link <?= $currentScript === 'dashboard.php' ? 'active' : '' ?>">Dashboard</a>
+                <a href="manage_platforms.php" class="nav-link <?= $currentScript === 'manage_platforms.php' ? 'active' : '' ?>">Platforms</a>
+                <a href="add_problem.php" class="nav-link <?= $currentScript === 'add_problem.php' ? 'active' : '' ?>">Problems</a>
+                <a href="record_contest.php" class="nav-link <?= $currentScript === 'record_contest.php' ? 'active' : '' ?>">Contests</a>
+            <?php endif; ?>
         <?php else: ?>
             <a href="register.php" class="nav-link <?= $currentScript === 'register.php' ? 'active' : '' ?>">Register</a>
             <a href="login.php" class="nav-link <?= $currentScript === 'login.php' ? 'active' : '' ?>">Sign In</a>
+            <a href="mentor_register.php" class="nav-link <?= $currentScript === 'mentor_register.php' ? 'active' : '' ?>" style="color: #a78bfa;">Mentor Portal</a>
         <?php endif; ?>
     </nav>
 
     <div class="nav-actions">
         <?php if (!empty($_SESSION['user_name'])): ?>
             <div class="user-pill">
-                <span class="user-avatar-dot"></span>
+                <?php if (($_SESSION['user_role'] ?? 'student') === 'mentor'): ?>
+                    <span class="badge badge-purple" style="font-size: 0.7rem; padding: 2px 7px;">Mentor</span>
+                <?php else: ?>
+                    <span class="user-avatar-dot"></span>
+                <?php endif; ?>
                 <span><?= htmlspecialchars($_SESSION['user_name']) ?></span>
             </div>
             <a href="logout.php" class="nav-link" style="color: var(--clr-danger);" title="Log out">Logout</a>

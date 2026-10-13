@@ -6,7 +6,54 @@ if (empty($_SESSION['user_id'])) {
     exit;
 }
 
+if (!empty($_SESSION['user_role']) && $_SESSION['user_role'] === 'mentor') {
+    header("Location: mentor_dashboard.php");
+    exit;
+}
+
 $user_id = $_SESSION['user_id'];
+
+$mentorNotice = '';
+$mentorNoticeType = 'info';
+
+/* Handle Mentor Invitation Responses */
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['mentor_action'])) {
+    $mAction = $_POST['mentor_action'];
+    $assignmentId = (int)($_POST['assignment_id'] ?? 0);
+
+    if ($mAction === 'accept_mentor') {
+        try {
+            $stmt = $pdo->prepare("UPDATE mentor_student_assignments SET status = 'accepted', responded_at = NOW() WHERE id = ? AND student_id = ? AND status = 'pending'");
+            $stmt->execute([$assignmentId, $user_id]);
+            $mentorNotice = 'Mentorship invitation accepted! Your mentor can now guide your competitive programming progress.';
+            $mentorNoticeType = 'success';
+        } catch (Exception $e) {
+            $mentorNotice = 'Error accepting invitation: ' . $e->getMessage();
+            $mentorNoticeType = 'error';
+        }
+    } elseif ($mAction === 'reject_mentor') {
+        try {
+            $stmt = $pdo->prepare("UPDATE mentor_student_assignments SET status = 'rejected', responded_at = NOW() WHERE id = ? AND student_id = ? AND status = 'pending'");
+            $stmt->execute([$assignmentId, $user_id]);
+            $mentorNotice = 'Mentorship invitation declined.';
+            $mentorNoticeType = 'info';
+        } catch (Exception $e) {
+            $mentorNotice = 'Error declining invitation: ' . $e->getMessage();
+            $mentorNoticeType = 'error';
+        }
+    } elseif ($mAction === 'leave_mentor') {
+        $mentorIdToLeave = (int)($_POST['mentor_id'] ?? 0);
+        try {
+            $stmt = $pdo->prepare("DELETE FROM mentor_student_assignments WHERE mentor_id = ? AND student_id = ?");
+            $stmt->execute([$mentorIdToLeave, $user_id]);
+            $mentorNotice = 'Mentorship connection removed.';
+            $mentorNoticeType = 'info';
+        } catch (Exception $e) {
+            $mentorNotice = 'Error removing mentor: ' . $e->getMessage();
+            $mentorNoticeType = 'error';
+        }
+    }
+}
 
 $user = ['name' => $_SESSION['user_name'] ?? 'User'];
 $stats = [
@@ -21,6 +68,8 @@ $contests = [];
 $strongTopics = [];
 $weakTopics = [];
 $totalTaggedTopics = 0;
+$pendingMentorInvitations = [];
+$assignedMentors = [];
 
 if ($pdo !== null) {
     try {
@@ -106,6 +155,10 @@ if ($pdo !== null) {
             asort($sortedAsc);
             $weakTopics = array_slice($sortedAsc, 0, 5, true);
         }
+
+        /* ----------------- Mentor Data ----------------- */
+        $pendingMentorInvitations = get_student_mentor_invitations($pdo, $user_id);
+        $assignedMentors = get_student_assigned_mentors($pdo, $user_id);
     } catch (Exception $e) {
         $dbError = $e->getMessage();
     }
@@ -147,6 +200,50 @@ $chartData = [
 
 include 'header.php';
 ?>
+
+<?php if ($mentorNotice): ?>
+    <div class="msg <?= $mentorNoticeType ?>" style="margin-bottom: 20px;">
+        <span><?= $mentorNoticeType === 'success' ? '✅' : 'ℹ️' ?></span>
+        <span><?= htmlspecialchars($mentorNotice) ?></span>
+    </div>
+<?php endif; ?>
+
+<?php if (!empty($pendingMentorInvitations)): ?>
+    <?php foreach ($pendingMentorInvitations as $inv): ?>
+        <div class="card" style="margin-bottom: 24px; border: 1px solid rgba(139, 92, 246, 0.4); background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%);">
+            <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px;">
+                <div>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                        <span class="badge badge-purple">🎓 Mentorship Invitation</span>
+                        <span style="font-size: 0.78rem; color: var(--clr-text-subtle);"><?= date('M d, Y', strtotime($inv['invited_at'])) ?></span>
+                    </div>
+                    <h3 style="font-size: 1.15rem; margin-bottom: 4px;">
+                        Mentor <strong><?= htmlspecialchars($inv['mentor_name']) ?></strong> (<?= htmlspecialchars($inv['mentor_email']) ?>) has invited you to their mentorship group
+                    </h3>
+                    <p style="font-size: 0.88rem; color: var(--clr-text-muted); margin: 0; max-width: 680px;">
+                        By accepting, your mentor will be able to review your solved problems, platform ratings, and contest trends to guide your practice. Your private passwords and credentials are never shared.
+                    </p>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <form method="post" action="dashboard.php" style="margin: 0;">
+                        <input type="hidden" name="mentor_action" value="accept_mentor">
+                        <input type="hidden" name="assignment_id" value="<?= (int)$inv['assignment_id'] ?>">
+                        <button type="submit" class="btn btn-primary btn-sm" style="background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);">
+                            Accept Invitation
+                        </button>
+                    </form>
+                    <form method="post" action="dashboard.php" style="margin: 0;" onsubmit="return confirm('Decline this mentorship invitation?');">
+                        <input type="hidden" name="mentor_action" value="reject_mentor">
+                        <input type="hidden" name="assignment_id" value="<?= (int)$inv['assignment_id'] ?>">
+                        <button type="submit" class="btn btn-secondary btn-sm" style="color: var(--clr-text-muted);">
+                            Decline
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    <?php endforeach; ?>
+<?php endif; ?>
 
 <?php if (isset($dbError)): ?>
     <div class="msg error">
@@ -528,6 +625,49 @@ include 'header.php';
             </tbody>
         </table>
     </div>
+</section>
+
+<!-- Connected Mentors Section -->
+<section class="surface" style="margin-top: 30px;">
+    <div class="surface-header">
+        <div>
+            <h3>Connected Mentors</h3>
+            <p>Faculty & Mentors authorized to monitor your competitive programming path.</p>
+        </div>
+    </div>
+    <?php if (empty($assignedMentors)): ?>
+        <div style="padding: 24px; text-align: center; color: var(--clr-text-muted); font-size: 0.9rem; background: var(--clr-bg-subtle); border-radius: var(--radius-sm);">
+            You are not currently linked with any mentors. If your teacher or coach sends you an invitation, it will appear at the top of your dashboard.
+        </div>
+    <?php else: ?>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px;">
+            <?php foreach ($assignedMentors as $am): ?>
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; background: var(--clr-bg-subtle); border-radius: var(--radius-sm); border: 1px solid var(--clr-border);">
+                    <div>
+                        <div style="font-weight: 700; font-size: 0.95rem; color: var(--clr-text-main);">
+                            <?= htmlspecialchars($am['mentor_name']) ?>
+                        </div>
+                        <div style="font-size: 0.8rem; color: var(--clr-text-muted);">
+                            <?= htmlspecialchars($am['mentor_email']) ?>
+                        </div>
+                        <div style="font-size: 0.75rem; color: var(--clr-text-subtle); margin-top: 4px;">
+                            Connected since: <?= $am['responded_at'] ? date('M d, Y', strtotime($am['responded_at'])) : 'Active' ?>
+                        </div>
+                    </div>
+                    <form method="post" action="dashboard.php" onsubmit="return confirm('Disconnect from mentor <?= htmlspecialchars(addslashes($am['mentor_name'])) ?>?');">
+                        <input type="hidden" name="mentor_action" value="leave_mentor">
+                        <input type="hidden" name="mentor_id" value="<?= (int)$am['mentor_id'] ?>">
+                        <button type="submit" class="btn btn-secondary btn-sm" style="color: var(--clr-danger); border-color: rgba(239,68,68,0.2);">
+                            Disconnect
+                        </button>
+                    </form>
+                </div>
+            <?php endforeach; ?>
+        </div>
+        <div style="margin-top: 14px; font-size: 0.8rem; color: var(--clr-text-muted);">
+            🔒 <strong>Privacy Assurance:</strong> Mentors can view your platform handles, rating trajectories, and solved problems. They cannot see your password, personal settings, or manage your platform connections.
+        </div>
+    <?php endif; ?>
 </section>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

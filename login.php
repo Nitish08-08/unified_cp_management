@@ -4,7 +4,11 @@ require 'db.php';
 $message = '';
 
 if (isset($_GET['registered'])) {
-    $message = 'Registration successful! You can now sign in.';
+    if ($_GET['registered'] === 'mentor') {
+        $message = 'Mentor registration successful! Please sign in to access your Mentor Dashboard.';
+    } else {
+        $message = 'Registration successful! You can now sign in.';
+    }
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -15,14 +19,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $message = 'Database connection error: ' . ($dbConnectionError ?? 'Please verify your database credentials.');
     } else {
         try {
-            $stmt = $pdo->prepare("SELECT id, name, password_hash FROM users WHERE email = ?");
+            $stmt = $pdo->prepare("SELECT id, name, password_hash, role FROM users WHERE email = ?");
             $stmt->execute([$email]);
             $user = $stmt->fetch();
 
             if ($user && password_verify($password, $user['password_hash'])) {
                 $_SESSION['user_id'] = $user['id'];
                 $_SESSION['user_name'] = $user['name'];
-                header("Location: dashboard.php");
+                $_SESSION['user_role'] = $user['role'] ?? 'student';
+
+                if ($_SESSION['user_role'] === 'mentor') {
+                    header("Location: mentor_dashboard.php");
+                } else {
+                    header("Location: dashboard.php");
+                }
                 exit;
             } else {
                 $message = 'Invalid email or password.';
@@ -67,7 +77,10 @@ include 'header.php';
     </form>
 
     <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--clr-border); text-align: center; font-size: 0.9rem; color: var(--clr-text-muted);">
-        Don't have an account? <a href="register.php" style="color: var(--clr-primary); font-weight: 600;">Create one now</a>
+        Don't have an account? <a href="register.php" style="color: var(--clr-primary); font-weight: 600;">Create Student Account</a>
+        <div style="margin-top: 8px;">
+            Are you a Mentor? <a href="mentor_register.php" style="color: #a78bfa; font-weight: 600;">Mentor Access Portal &rarr;</a>
+        </div>
     </div>
 </div>
 

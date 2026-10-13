@@ -250,3 +250,179 @@ if (!function_exists('recalculateAggregatedStats')) {
         }
     }
 }
+
+/**
+ * Ensures user is authenticated.
+ */
+if (!function_exists('require_auth')) {
+    function require_auth(): void {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        if (empty($_SESSION['user_id'])) {
+            header("Location: login.php");
+            exit;
+        }
+    }
+}
+
+/**
+ * Ensures authenticated user has 'mentor' role.
+ */
+if (!function_exists('require_mentor')) {
+    function require_mentor(): void {
+        require_auth();
+        $role = $_SESSION['user_role'] ?? 'student';
+        if ($role !== 'mentor') {
+            http_response_code(403);
+            header("Location: dashboard.php?error=unauthorized_mentor");
+            exit;
+        }
+    }
+}
+
+/**
+ * Ensures authenticated user has 'student' role. Mentors are redirected to mentor dashboard.
+ */
+if (!function_exists('require_student')) {
+    function require_student(): void {
+        require_auth();
+        $role = $_SESSION['user_role'] ?? 'student';
+        if ($role === 'mentor') {
+            header("Location: mentor_dashboard.php");
+            exit;
+        }
+    }
+}
+
+/**
+ * Validates mentor-to-student assignment ownership to prevent IDOR vulnerabilities.
+ */
+if (!function_exists('is_student_assigned_to_mentor')) {
+    function is_student_assigned_to_mentor(PDO $pdo, int $mentorId, int $studentId): bool {
+        $stmt = $pdo->prepare("
+            SELECT COUNT(*) FROM mentor_student_assignments 
+            WHERE mentor_id = ? AND student_id = ? AND status = 'accepted'
+        ");
+        $stmt->execute([$mentorId, $studentId]);
+        return (int)$stmt->fetchColumn() > 0;
+    }
+}
+
+/**
+ * Fetches all accepted students assigned to a mentor with summary statistics.
+ */
+if (!function_exists('get_mentor_assigned_students')) {
+    function get_mentor_assigned_students(PDO $pdo, int $mentorId): array {
+        $stmt = $pdo->prepare("
+            SELECT 
+                u.id, 
+                u.name, 
+                u.email, 
+                u.join_date,
+                msa.invited_at,
+                msa.responded_at,
+                COALESCE(ast.total_problems_solved, 0) AS total_problems_solved,
+                COALESCE(ast.total_contests, 0) AS total_contests,
+                COALESCE(ast.composite_score, 0.0) AS composite_score,
+                COALESCE(ast.consistency_score, 0.0) AS consistency_score,
+                COALESCE(ast.problem_solving_score, 0.0) AS problem_solving_score,
+                ast.last_updated
+            FROM mentor_student_assignments msa
+            JOIN users u ON msa.student_id = u.id
+            LEFT JOIN aggregated_stats ast ON u.id = ast.user_id
+            WHERE msa.mentor_id = ? AND msa.status = 'accepted'
+            ORDER BY u.name ASC
+        ");
+        $stmt->execute([$mentorId]);
+        $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Attach platform profiles for each student
+        $profileStmt = $pdo->prepare("
+            SELECT upp.*, p.platform_name 
+            FROM user_platform_profiles upp
+            JOIN platforms p ON upp.platform_id = p.id
+            WHERE upp.user_id = ?
+        ");
+
+        foreach ($students as &$student) {
+            $profileStmt->execute([$student['id']]);
+            $profiles = $profileStmt->fetchAll(PDO::FETCH_ASSOC);
+            $indexed = [];
+            foreach ($profiles as $prof) {
+                $indexed[$prof['platform_name']] = $prof;
+            }
+            $student['platforms'] = $indexed;
+        }
+        unset($student);
+
+        return $students;
+    }
+}
+
+/**
+ * Fetches pending invitations sent by this mentor.
+ */
+if (!function_exists('get_mentor_pending_invitations')) {
+    function get_mentor_pending_invitations(PDO $pdo, int $mentorId): array {
+        $stmt = $pdo->prepare("
+            SELECT 
+                msa.id AS assignment_id,
+                msa.status,
+                msa.invited_at,
+                u.id AS student_id,
+                u.name AS student_name,
+                u.email AS student_email
+            FROM mentor_student_assignments msa
+            JOIN users u ON msa.student_id = u.id
+            WHERE msa.mentor_id = ? AND msa.status = 'pending'
+            ORDER BY msa.invited_at DESC
+        ");
+        $stmt->execute([$mentorId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+}
+
+/**
+ * Fetches pending invitations received by a student.
+ */
+if (!function_exists('get_student_mentor_invitations')) {
+    function get_student_mentor_invitations(PDO $pdo, int $studentId): array {
+        $stmt = $pdo->prepare("
+            SELECT 
+                msa.id AS assignment_id,
+                msa.invited_at,
+                m.id AS mentor_id,
+                m.name AS mentor_name,
+                m.email AS mentor_email
+            FROM mentor_student_assignments msa
+            JOIN users m ON msa.mentor_id = m.id
+            WHERE msa.student_id = ? AND msa.status = 'pending'
+            ORDER BY msa.invited_at DESC
+        ");
+        $stmt->execute([$studentId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+}
+
+/**
+ * Fetches assigned mentors for a student.
+ */
+if (!function_exists('get_student_assigned_mentors')) {
+    function get_student_assigned_mentors(PDO $pdo, int $studentId): array {
+        $stmt = $pdo->prepare("
+            SELECT 
+                msa.id AS assignment_id,
+                msa.responded_at,
+                m.id AS mentor_id,
+                m.name AS mentor_name,
+                m.email AS mentor_email
+            FROM mentor_student_assignments msa
+            JOIN users m ON msa.mentor_id = m.id
+            WHERE msa.student_id = ? AND msa.status = 'accepted'
+            ORDER BY m.name ASC
+        ");
+        $stmt->execute([$studentId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+}

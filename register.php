@@ -20,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $message = 'An account with this email already exists.';
             } else {
                 $hash = password_hash($password, PASSWORD_DEFAULT);
-                $stmt = $pdo->prepare("INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)");
+                $stmt = $pdo->prepare("INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, 'student')");
                 $stmt->execute([$name, $email, $hash]);
 
                 $user_id = $pdo->lastInsertId();
@@ -76,6 +76,9 @@ include 'header.php';
 
     <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--clr-border); text-align: center; font-size: 0.9rem; color: var(--clr-text-muted);">
         Already have an account? <a href="login.php" style="color: var(--clr-primary); font-weight: 600;">Sign in here</a>
+        <div style="margin-top: 8px;">
+            Are you a Mentor? <a href="mentor_register.php" style="color: #a78bfa; font-weight: 600;">Mentor Access Portal &rarr;</a>
+        </div>
     </div>
 </div>
 

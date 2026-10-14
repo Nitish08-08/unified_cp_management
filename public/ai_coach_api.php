@@ -13,18 +13,10 @@ require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../includes/helpers.php';
 require_once __DIR__ . '/../services/ai_coach_service.php';
 
-// Authentication Guard
+// Authentication Guard & Session Init
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-if (empty($_SESSION['user_id'])) {
-    http_response_code(401);
-    echo json_encode(['success' => false, 'error' => 'Authentication required. Please sign in.']);
-    exit;
-}
-
-$userId = (int)$_SESSION['user_id'];
-$action = $_GET['action'] ?? ($_POST['action'] ?? '');
 
 // Helper to read JSON request body
 function get_json_input(): array {
@@ -35,6 +27,33 @@ function get_json_input(): array {
 }
 
 $input = get_json_input();
+$action = $_GET['action'] ?? ($input['action'] ?? ($_POST['action'] ?? ''));
+
+// Serverless fallback: verify signed HMAC token if session cookie was lost across Lambda workers
+if (empty($_SESSION['user_id'])) {
+    $token = $_SERVER['HTTP_X_AUTH_TOKEN'] ?? ($input['auth_token'] ?? ($_GET['auth_token'] ?? ''));
+    if ($token && function_exists('verify_user_auth_token')) {
+        $tokenUserId = verify_user_auth_token($token);
+        if ($tokenUserId && $pdo !== null) {
+            $uStmt = $pdo->prepare("SELECT id, name, role FROM users WHERE id = ?");
+            $uStmt->execute([$tokenUserId]);
+            $uRow = $uStmt->fetch(PDO::FETCH_ASSOC);
+            if ($uRow) {
+                $_SESSION['user_id'] = (int)$uRow['id'];
+                $_SESSION['user_name'] = $uRow['name'];
+                $_SESSION['user_role'] = $uRow['role'];
+            }
+        }
+    }
+}
+
+if (empty($_SESSION['user_id'])) {
+    http_response_code(401);
+    echo json_encode(['success' => false, 'error' => 'Authentication required. Please sign in.']);
+    exit;
+}
+
+$userId = (int)$_SESSION['user_id'];
 
 try {
     switch ($action) {

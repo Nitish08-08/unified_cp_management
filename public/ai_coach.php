@@ -7,6 +7,7 @@ require_auth();
 
 $userId = (int)$_SESSION['user_id'];
 $userName = $_SESSION['user_name'] ?? 'Student';
+$authToken = function_exists('generate_user_auth_token') ? generate_user_auth_token($userId) : '';
 
 // Retrieve live context summary for verified badge
 $studentContext = get_student_ai_context($pdo, $userId);
@@ -848,8 +849,35 @@ include __DIR__ . '/../includes/header.php';
      Frontend Client Controller
      ========================================================================== -->
 <script>
+const USER_AUTH_TOKEN = <?= json_encode($authToken) ?>;
 let currentConversationId = null;
 let isGenerating = false;
+
+async function apiFetch(url, options = {}) {
+    options.headers = options.headers || {};
+    if (USER_AUTH_TOKEN) {
+        options.headers['X-Auth-Token'] = USER_AUTH_TOKEN;
+    }
+    options.credentials = 'same-origin';
+
+    let finalUrl = url;
+    if (USER_AUTH_TOKEN) {
+        const separator = url.includes('?') ? '&' : '?';
+        finalUrl = `${url}${separator}auth_token=${encodeURIComponent(USER_AUTH_TOKEN)}`;
+    }
+
+    if (options.body && typeof options.body === 'string' && options.headers['Content-Type'] === 'application/json') {
+        try {
+            const parsed = JSON.parse(options.body);
+            if (USER_AUTH_TOKEN && !parsed.auth_token) {
+                parsed.auth_token = USER_AUTH_TOKEN;
+            }
+            options.body = JSON.stringify(parsed);
+        } catch(e) {}
+    }
+
+    return fetch(finalUrl, options);
+}
 
 document.addEventListener('DOMContentLoaded', () => {
     loadConversations();
@@ -880,7 +908,7 @@ function handleKeyDown(e) {
 
 async function loadConversations() {
     try {
-        const res = await fetch('ai_coach_api.php?action=get_conversations');
+        const res = await apiFetch('ai_coach_api.php?action=get_conversations');
         const data = await res.json();
         if (data.success) {
             renderConversationsList(data.conversations);
@@ -921,7 +949,7 @@ function renderConversationsList(convs) {
 
 async function loadActivePlan() {
     try {
-        const res = await fetch('ai_coach_api.php?action=get_active_plan');
+        const res = await apiFetch('ai_coach_api.php?action=get_active_plan');
         const data = await res.json();
         if (data.success && data.plan) {
             renderActivePlan(data.plan, data.tasks || []);
@@ -962,7 +990,7 @@ function renderActivePlan(plan, tasks) {
 
 async function togglePlanTask(taskId, checkbox) {
     try {
-        const res = await fetch('ai_coach_api.php', {
+        const res = await apiFetch('ai_coach_api.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ action: 'toggle_task', task_id: taskId })
@@ -1001,7 +1029,7 @@ async function loadConversationMessages(convId) {
     list.innerHTML = '<div style="padding: 24px; text-align: center; color: var(--clr-text-muted);">Loading conversation...</div>';
 
     try {
-        const res = await fetch(`ai_coach_api.php?action=get_messages&conversation_id=${convId}`);
+        const res = await apiFetch(`ai_coach_api.php?action=get_messages&conversation_id=${convId}`);
         const data = await res.json();
         list.innerHTML = '';
 
@@ -1023,7 +1051,7 @@ async function deleteConversation(convId, event) {
     if (!confirm('Are you sure you want to delete this conversation?')) return;
 
     try {
-        const res = await fetch('ai_coach_api.php', {
+        const res = await apiFetch('ai_coach_api.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ action: 'delete_conversation', conversation_id: convId })
@@ -1071,7 +1099,7 @@ async function handleChatSubmit(e) {
     scrollChatToBottom();
 
     try {
-        const res = await fetch('ai_coach_api.php', {
+        const res = await apiFetch('ai_coach_api.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -1144,7 +1172,7 @@ function appendMessageToUI(role, content, msgId = null, feedback = null) {
 
 async function submitFeedback(msgId, rating, btn) {
     try {
-        const res = await fetch('ai_coach_api.php', {
+        const res = await apiFetch('ai_coach_api.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ action: 'feedback', message_id: msgId, rating: rating })

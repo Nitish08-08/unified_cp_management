@@ -426,3 +426,43 @@ if (!function_exists('get_student_assigned_mentors')) {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }
+
+/**
+ * Generates a tamper-proof HMAC-SHA256 authenticated token for serverless API calls.
+ */
+if (!function_exists('generate_user_auth_token')) {
+    function generate_user_auth_token(int $userId): string {
+        $secret = function_exists('env_val') ? env_val('APP_SECRET', 'unified_cp_hmac_secret_2026_tidb_key') : 'unified_cp_hmac_secret_2026_tidb_key';
+        $payload = base64_encode(json_encode([
+            'uid' => $userId,
+            'ts'  => time(),
+        ]));
+        $sig = hash_hmac('sha256', $payload, $secret);
+        return $payload . '.' . $sig;
+    }
+}
+
+/**
+ * Validates an HMAC-SHA256 authenticated token and returns the verified user ID or null.
+ */
+if (!function_exists('verify_user_auth_token')) {
+    function verify_user_auth_token(string $token): ?int {
+        if ($token === '') return null;
+        $parts = explode('.', $token, 2);
+        if (count($parts) !== 2) return null;
+        list($payload, $sig) = $parts;
+        $secret = function_exists('env_val') ? env_val('APP_SECRET', 'unified_cp_hmac_secret_2026_tidb_key') : 'unified_cp_hmac_secret_2026_tidb_key';
+        $expectedSig = hash_hmac('sha256', $payload, $secret);
+        if (!hash_equals($expectedSig, $sig)) return null;
+
+        $decoded = base64_decode($payload, true);
+        if ($decoded === false) return null;
+        $data = json_decode($decoded, true);
+        if (!is_array($data) || empty($data['uid']) || empty($data['ts'])) return null;
+
+        // Valid for 14 days
+        if ((time() - (int)$data['ts']) > 86400 * 14) return null;
+
+        return (int)$data['uid'];
+    }
+}

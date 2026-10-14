@@ -233,4 +233,13 @@ CREATE TABLE IF NOT EXISTS `ai_feedback` (
   CONSTRAINT `fk_af_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- 17. Serverless Sessions Table
+CREATE TABLE IF NOT EXISTS `sessions` (
+  `id` varchar(128) NOT NULL,
+  `data` mediumtext NOT NULL,
+  `last_activity` int(10) unsigned NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_last_activity` (`last_activity`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 

@@ -252,6 +252,29 @@ include 'header.php';
     </div>
 <?php endif; ?>
 
+<!-- AI Coach Quick Action Card -->
+<div class="card" style="margin-bottom: 24px; border: 1px solid rgba(96, 165, 250, 0.4); background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(139, 92, 246, 0.06) 100%);">
+    <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px;">
+        <div style="display: flex; align-items: center; gap: 14px;">
+            <div style="width: 44px; height: 44px; border-radius: 12px; background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);">
+                🤖
+            </div>
+            <div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <h3 style="font-size: 1.15rem; margin: 0;">Personal AI Competitive Programming Coach</h3>
+                    <span class="badge badge-blue">Personalized</span>
+                </div>
+                <p style="margin: 2px 0 0 0; font-size: 0.86rem; color: var(--clr-text-muted);">
+                    Get personalized weak-topic diagnostics, adaptive 7-day practice plans, and step-by-step coding guidance.
+                </p>
+            </div>
+        </div>
+        <a href="ai_coach.php" class="btn btn-primary btn-sm" style="background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);">
+            <span>Launch AI Coach &rarr;</span>
+        </a>
+    </div>
+</div>
+
 <!-- Dashboard Welcome Header -->
 <section class="surface">
     <div class="surface-header">

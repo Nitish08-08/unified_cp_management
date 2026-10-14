@@ -54,6 +54,7 @@ $currentScript = basename($_SERVER['PHP_SELF'] ?? 'index.php');
                 <a href="mentor_dashboard.php" class="nav-link <?= in_array($currentScript, ['mentor_dashboard.php', 'mentor_student_detail.php']) ? 'active' : '' ?>">Mentor Dashboard</a>
             <?php else: ?>
                 <a href="dashboard.php" class="nav-link <?= $currentScript === 'dashboard.php' ? 'active' : '' ?>">Dashboard</a>
+                <a href="ai_coach.php" class="nav-link <?= $currentScript === 'ai_coach.php' ? 'active' : '' ?>" style="color: #60a5fa; font-weight: 700;">🤖 AI Coach</a>
                 <a href="manage_platforms.php" class="nav-link <?= $currentScript === 'manage_platforms.php' ? 'active' : '' ?>">Platforms</a>
                 <a href="add_problem.php" class="nav-link <?= $currentScript === 'add_problem.php' ? 'active' : '' ?>">Problems</a>
                 <a href="record_contest.php" class="nav-link <?= $currentScript === 'record_contest.php' ? 'active' : '' ?>">Contests</a>

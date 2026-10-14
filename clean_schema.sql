@@ -166,3 +166,71 @@ CREATE TABLE IF NOT EXISTS `mentor_goals` (
   CONSTRAINT `fk_mg_student` FOREIGN KEY (`student_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- 12. AI Conversations
+CREATE TABLE IF NOT EXISTS `ai_conversations` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `title` varchar(255) NOT NULL DEFAULT 'New Conversation',
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_ac_user` (`user_id`),
+  CONSTRAINT `fk_ac_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 13. AI Messages
+CREATE TABLE IF NOT EXISTS `ai_messages` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `conversation_id` int(11) NOT NULL,
+  `role` enum('user', 'assistant', 'system') NOT NULL,
+  `content` mediumtext NOT NULL,
+  `metadata` json DEFAULT NULL,
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_am_conv` (`conversation_id`),
+  CONSTRAINT `fk_am_conv` FOREIGN KEY (`conversation_id`) REFERENCES `ai_conversations` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 14. AI Practice Plans
+CREATE TABLE IF NOT EXISTS `ai_practice_plans` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `conversation_id` int(11) DEFAULT NULL,
+  `title` varchar(255) NOT NULL,
+  `duration_days` int(11) NOT NULL DEFAULT 7,
+  `objective` text DEFAULT NULL,
+  `status` enum('active', 'completed', 'archived') NOT NULL DEFAULT 'active',
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_app_user` (`user_id`),
+  CONSTRAINT `fk_app_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 15. AI Plan Tasks
+CREATE TABLE IF NOT EXISTS `ai_plan_tasks` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `plan_id` int(11) NOT NULL,
+  `day_number` int(11) NOT NULL DEFAULT 1,
+  `topic` varchar(100) DEFAULT NULL,
+  `task_description` text NOT NULL,
+  `is_completed` tinyint(1) NOT NULL DEFAULT 0,
+  `completed_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_apt_plan` (`plan_id`),
+  CONSTRAINT `fk_apt_plan` FOREIGN KEY (`plan_id`) REFERENCES `ai_practice_plans` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 16. AI Feedback
+CREATE TABLE IF NOT EXISTS `ai_feedback` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `message_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `rating` enum('up', 'down') NOT NULL,
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_af_msg` (`message_id`),
+  CONSTRAINT `fk_af_msg` FOREIGN KEY (`message_id`) REFERENCES `ai_messages` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_af_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+

@@ -11,7 +11,10 @@ $port = 4000;
 $db   = 'competitive_cp';
 $user = 'jB2n4xjUGg37Ctb.root';
 $pass = '1c5Egb0MK4f8iCxA';
-$caFile = __DIR__ . '/certs/ca.pem';
+$caFile = dirname(__DIR__) . '/certs/ca.pem';
+if (!file_exists($caFile)) {
+    $caFile = __DIR__ . '/certs/ca.pem';
+}
 
 $attrCa = defined('Pdo\Mysql::ATTR_SSL_CA') ? constant('Pdo\Mysql::ATTR_SSL_CA') : (defined('PDO::MYSQL_ATTR_SSL_CA') ? PDO::MYSQL_ATTR_SSL_CA : 1008);
 $attrVerify = defined('Pdo\Mysql::ATTR_SSL_VERIFY_SERVER_CERT') ? constant('Pdo\Mysql::ATTR_SSL_VERIFY_SERVER_CERT') : (defined('PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT') ? PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT : 1013);
@@ -33,7 +36,10 @@ try {
     // 2. Initialize schema if tables don't exist
     $schemaInit = false;
     if (!in_array('users', $tables)) {
-        $schemaFile = __DIR__ . '/clean_schema.sql';
+        $schemaFile = dirname(__DIR__) . '/database/clean_schema.sql';
+        if (!file_exists($schemaFile)) {
+            $schemaFile = __DIR__ . '/clean_schema.sql';
+        }
         if (file_exists($schemaFile)) {
             $sqlContent = file_get_contents($schemaFile);
             // Split and execute SQL statements

@@ -5,8 +5,19 @@
  * Unified CP Management System
  */
 
-require_once __DIR__ . '/db.php';
-require_once __DIR__ . '/helpers.php';
+$configDb = dirname(__DIR__) . '/config/db.php';
+if (file_exists($configDb)) {
+    require_once $configDb;
+} elseif (file_exists(__DIR__ . '/db.php')) {
+    require_once __DIR__ . '/db.php';
+}
+
+$includesHelpers = dirname(__DIR__) . '/includes/helpers.php';
+if (file_exists($includesHelpers)) {
+    require_once $includesHelpers;
+} elseif (file_exists(__DIR__ . '/helpers.php')) {
+    require_once __DIR__ . '/helpers.php';
+}
 
 /**
  * Gathers complete, verified competitive programming performance data for a student.

@@ -1,5 +1,5 @@
 <?php
-require 'db.php';
+require_once __DIR__ . '/../config/db.php';
 if (empty($_SESSION['user_id'])) {
     header("Location: login.php");
     exit;
@@ -25,7 +25,7 @@ if ($pdo !== null) {
     }
 }
 
-include 'header.php';
+include __DIR__ . '/../includes/header.php';
 ?>
 
 <section class="surface">
@@ -96,4 +96,4 @@ include 'header.php';
     </div>
 </section>
 
-<?php include 'footer.php'; ?>
+<?php include __DIR__ . '/../includes/footer.php'; ?>

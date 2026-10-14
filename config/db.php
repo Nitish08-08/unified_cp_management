@@ -14,7 +14,10 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 // Load .env file if present
-$envFile = __DIR__ . '/.env';
+$envFile = dirname(__DIR__) . '/.env';
+if (!file_exists($envFile)) {
+    $envFile = __DIR__ . '/.env';
+}
 if (file_exists($envFile)) {
     $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
     foreach ($lines as $line) {
@@ -68,9 +71,10 @@ if ($dbUrl = (env_val('DATABASE_URL') ?: env_val('MYSQL_URL'))) {
 }
 
 // CA certificate detection
-$caFile = __DIR__ . '/certs/ca.pem';
+$caFile = dirname(__DIR__) . '/certs/ca.pem';
 if (!file_exists($caFile) || !is_readable($caFile)) {
     $altCas = [
+        __DIR__ . '/certs/ca.pem',
         '/etc/pki/tls/certs/ca-bundle.crt',
         '/etc/ssl/certs/ca-certificates.crt',
         '/etc/ssl/cert.pem',
@@ -141,7 +145,10 @@ if ($pdo !== null) {
     try {
         $tables = $pdo->query("SHOW TABLES;")->fetchAll(PDO::FETCH_COLUMN);
         if (!in_array('users', $tables)) {
-            $schemaFile = __DIR__ . '/clean_schema.sql';
+            $schemaFile = dirname(__DIR__) . '/database/clean_schema.sql';
+            if (!file_exists($schemaFile)) {
+                $schemaFile = __DIR__ . '/clean_schema.sql';
+            }
             if (file_exists($schemaFile)) {
                 $sqlContent = file_get_contents($schemaFile);
                 $statements = array_filter(array_map('trim', explode(';', $sqlContent)));
@@ -157,4 +164,19 @@ if ($pdo !== null) {
     }
 }
 
-require_once __DIR__ . '/helpers.php';
+// Add app directories to include_path for maximum resilience
+$baseDir = dirname(__DIR__);
+set_include_path(
+    get_include_path() . PATH_SEPARATOR .
+    $baseDir . '/includes' . PATH_SEPARATOR .
+    $baseDir . '/config' . PATH_SEPARATOR .
+    $baseDir . '/services' . PATH_SEPARATOR .
+    $baseDir . '/public'
+);
+
+$helpersFile = dirname(__DIR__) . '/includes/helpers.php';
+if (file_exists($helpersFile)) {
+    require_once $helpersFile;
+} else {
+    require_once __DIR__ . '/helpers.php';
+}

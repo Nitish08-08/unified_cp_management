@@ -1,5 +1,5 @@
 <?php
-require 'db.php';
+require_once __DIR__ . '/../config/db.php';
 
 if (empty($_SESSION['user_id'])) {
     header("Location: login.php");
@@ -198,7 +198,7 @@ $chartData = [
     'colors'        => $chartColors,
 ];
 
-include 'header.php';
+include __DIR__ . '/../includes/header.php';
 ?>
 
 <?php if ($mentorNotice): ?>
@@ -794,4 +794,4 @@ if (chartData && chartData.labels && chartData.labels.length > 0) {
 }
 </script>
 
-<?php include 'footer.php'; ?>
+<?php include __DIR__ . '/../includes/footer.php'; ?>

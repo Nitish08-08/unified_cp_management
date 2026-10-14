@@ -1,5 +1,5 @@
 <?php
-require 'db.php';
+require_once __DIR__ . '/../config/db.php';
 require_mentor();
 
 $mentorId = (int)$_SESSION['user_id'];
@@ -170,7 +170,7 @@ if (!empty($studentIds)) {
     $recentSolves = $actStmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-include 'header.php';
+include __DIR__ . '/../includes/header.php';
 ?>
 
 <div style="margin-bottom: 24px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px;">
@@ -615,4 +615,4 @@ function sortTable(colIndex) {
 }
 </script>
 
-<?php include 'footer.php'; ?>
+<?php include __DIR__ . '/../includes/footer.php'; ?>

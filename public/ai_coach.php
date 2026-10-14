@@ -1,7 +1,7 @@
 <?php
-require 'db.php';
-require_once 'helpers.php';
-require_once 'ai_coach_service.php';
+require_once __DIR__ . '/../config/db.php';
+require_once __DIR__ . '/../includes/helpers.php';
+require_once __DIR__ . '/../services/ai_coach_service.php';
 
 require_auth();
 
@@ -13,7 +13,7 @@ $studentContext = get_student_ai_context($pdo, $userId);
 $stats = $studentContext['stats'];
 $platforms = $studentContext['platforms'];
 
-include 'header.php';
+include __DIR__ . '/../includes/header.php';
 ?>
 
 <div class="ai-coach-container">
@@ -1246,4 +1246,4 @@ function renderMarkdown(md) {
 }
 </script>
 
-<?php include 'footer.php'; ?>
+<?php include __DIR__ . '/../includes/footer.php'; ?>

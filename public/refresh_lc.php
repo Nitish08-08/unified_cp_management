@@ -1,5 +1,5 @@
 <?php
-require 'db.php';
+require_once __DIR__ . '/../config/db.php';
 
 if (empty($_SESSION['user_id'])) {
     header("Location: login.php");
@@ -12,7 +12,7 @@ $stmt = $pdo->prepare("
     SELECT upp.*, p.id AS pid
     FROM user_platform_profiles upp
     JOIN platforms p ON upp.platform_id = p.id
-    WHERE upp.user_id=? AND p.platform_name='CodeChef'
+    WHERE upp.user_id=? AND p.platform_name='LeetCode'
 ");
 $stmt->execute([$user_id]);
 $profile = $stmt->fetch();
@@ -25,8 +25,7 @@ $handle      = $profile['handle'];
 $platform_id = $profile['pid'];
 $profile_id  = $profile['id'];
 
-include 'sync_cc.php';
+include __DIR__ . '/../services/sync_lc.php';
 
-echo "<script>alert('CodeChef synced successfully!');</script>";
+echo "<script>alert('LeetCode synced successfully!');</script>";
 echo "<meta http-equiv='refresh' content='0; URL=dashboard.php'>";
-

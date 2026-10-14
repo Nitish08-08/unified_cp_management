@@ -1,5 +1,5 @@
 <?php
-require 'db.php';
+require_once __DIR__ . '/../config/db.php';
 require_mentor();
 
 $mentorId = (int)$_SESSION['user_id'];
@@ -8,7 +8,7 @@ $studentId = (int)($_GET['id'] ?? 0);
 // IDOR Protection: strictly verify that this student is assigned to this mentor
 if ($studentId <= 0 || !is_student_assigned_to_mentor($pdo, $mentorId, $studentId)) {
     http_response_code(403);
-    include 'header.php';
+    include __DIR__ . '/../includes/header.php';
     ?>
     <div class="card" style="max-width: 600px; margin: 60px auto; text-align: center; padding: 40px 24px;">
         <div style="font-size: 3.5rem; margin-bottom: 12px;">🛡️</div>
@@ -21,7 +21,7 @@ if ($studentId <= 0 || !is_student_assigned_to_mentor($pdo, $mentorId, $studentI
         </a>
     </div>
     <?php
-    include 'footer.php';
+    include __DIR__ . '/../includes/footer.php';
     exit;
 }
 
@@ -274,7 +274,7 @@ $goalsStmt = $pdo->prepare("
 $goalsStmt->execute([$mentorId, $studentId]);
 $goals = $goalsStmt->fetchAll(PDO::FETCH_ASSOC);
 
-include 'header.php';
+include __DIR__ . '/../includes/header.php';
 ?>
 
 <!-- ==========================================================================
@@ -873,4 +873,4 @@ if (chartLabels && chartLabels.length > 0) {
 }
 </script>
 
-<?php include 'footer.php'; ?>
+<?php include __DIR__ . '/../includes/footer.php'; ?>

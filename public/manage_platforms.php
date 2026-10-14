@@ -1,5 +1,5 @@
 <?php
-require 'db.php';
+require_once __DIR__ . '/../config/db.php';
 
 if (empty($_SESSION['user_id'])) {
     header("Location: login.php");
@@ -36,7 +36,7 @@ if ($pdo !== null) {
             $stmt->execute([$user_id, $platform_id]);
             $profile_id = $stmt->fetch()['id'];
 
-            include 'sync_cf.php';
+            include __DIR__ . '/../services/sync_cf.php';
             $message = "Codeforces account (@$handle) synchronized successfully!";
             $messageType = 'success';
         }
@@ -68,7 +68,7 @@ if ($pdo !== null) {
             $stmt->execute([$user_id, $platform_id]);
             $profile_id = $stmt->fetch()['id'];
 
-            include 'sync_lc.php';
+            include __DIR__ . '/../services/sync_lc.php';
             $message = "LeetCode account (@$handle) synchronized successfully!";
             $messageType = 'success';
         }
@@ -100,7 +100,7 @@ if ($pdo !== null) {
             $stmt->execute([$user_id, $platform_id]);
             $profile_id = $stmt->fetch()['id'];
 
-            include 'sync_cc.php';
+            include __DIR__ . '/../services/sync_cc.php';
             $message = "CodeChef account (@$handle) synchronized successfully!";
             $messageType = 'success';
         }
@@ -127,7 +127,7 @@ $cfHandle = $profileIndex['Codeforces']['handle'] ?? '';
 $lcHandle = $profileIndex['LeetCode']['handle'] ?? '';
 $ccHandle = $profileIndex['CodeChef']['handle'] ?? '';
 
-include 'header.php';
+include __DIR__ . '/../includes/header.php';
 ?>
 
 <section class="surface">
@@ -277,4 +277,4 @@ include 'header.php';
     </div>
 </section>
 
-<?php include 'footer.php'; ?>
+<?php include __DIR__ . '/../includes/footer.php'; ?>

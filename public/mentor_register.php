@@ -1,5 +1,5 @@
 <?php
-require 'db.php';
+require_once __DIR__ . '/../config/db.php';
 
 $message = '';
 $isError = true;
@@ -42,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-include 'header.php';
+include __DIR__ . '/../includes/header.php';
 ?>
 
 <div class="form-card" style="max-width: 480px; margin: 40px auto; border-top: 3px solid #8b5cf6;">
@@ -103,4 +103,4 @@ include 'header.php';
     </div>
 </div>
 
-<?php include 'footer.php'; ?>
+<?php include __DIR__ . '/../includes/footer.php'; ?>
